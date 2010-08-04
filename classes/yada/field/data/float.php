@@ -1,13 +1,20 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
+/*
+ * Yada: Yet Another Data Abstraction
+ * @author Jeremy Fowler <jeremy.f76@gmail.com>
+ * @copyright Copyright (c) 2010, Jeremy Fowler
+ * @license http://www.opensource.org/licenses/gpl-3.0.html GNU General Public License version 3 (GPLv3)
+ */
+ 
 abstract class Yada_Field_Data_Float extends Yada_Field_Data
 {
-        public function __construct($options = array())
-        {
-            parent::__construct($options);
-            // The number of places to round the number, NULL to forgo rounding
-            $this->places = (isset($this->places)) ? $this->places : NULL;
-        }
+	public function __construct($options = array())
+	{
+		parent::__construct($options);
+		// The number of places to round the number, NULL to forgo rounding
+		$this->places = (isset($this->places)) ? $this->places : NULL;
+	}
 
 	/**
 	 * Converts to float and rounds the number if necessary

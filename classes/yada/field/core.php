@@ -1,20 +1,27 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
+/*
+ * Yada: Yet Another Data Abstraction
+ * @author Jeremy Fowler <jeremy.f76@gmail.com>
+ * @copyright Copyright (c) 2010, Jeremy Fowler
+ * @license http://www.opensource.org/licenses/gpl-3.0.html GNU General Public License version 3 (GPLv3)
+ */
+ 
 abstract class Yada_Field_Core
 {
-        protected $_props;
+	protected $_props;
 
 	public function __construct($options = array())
 	{
-                $defaults = array(
-                        'unique' => FALSE,
-                        'description' => '',
-                        'default' => NULL,
-                        'null' => FALSE,
-                        'filters' => array(),
-                        'rules' => array(),
-                        'callbacks' => array(),
-                );
+		$defaults = array(
+			'unique' => FALSE,
+			'description' => '',
+			'default' => NULL,
+			'null' => FALSE,
+			'filters' => array(),
+			'rules' => array(),
+			'callbacks' => array(),
+		);
 
 		// Assume it's the column name
 		if (is_string($options))
@@ -23,7 +30,7 @@ abstract class Yada_Field_Core
 		}
 		elseif (is_array($options))
 		{
-                        $defaults = Arr::merge($defaults, $options);
+			$defaults = Arr::merge($defaults, $options);
 		}
 
 		// Check as to whether we need to add
@@ -33,22 +40,22 @@ abstract class Yada_Field_Core
 			$defaults['callbacks'][] = array($this, '_is_unique');
 		}
 
-                $this->_props = new ArrayObject($defaults, ArrayObject::ARRAY_AS_PROPS);
+		$this->_props = new ArrayObject($defaults, ArrayObject::ARRAY_AS_PROPS);
 	}
 
-        public function __get($name)
-        {
-                return ($this->_props->offsetExists($name)) ? $this->_props[$name] : NULL;
-        }
+	public function __get($name)
+	{
+		return ($this->_props->offsetExists($name)) ? $this->_props[$name] : NULL;
+	}
 
-        public function __set($name, $value)
-        {
-                $this->_props[$name] = $value;
-        }
+	public function __set($name, $value)
+	{
+		$this->_props[$name] = $value;
+	}
 
 	public function initialize($meta, $model, $column)
 	{
-                $this->meta = $meta;
+		$this->meta = $meta;
 
 		// This will come in handy for setting complex relationships
 		$this->model = $model;
@@ -68,12 +75,12 @@ abstract class Yada_Field_Core
 		}
 	}
 
-        public function column($prefix)
-        {
-                return $prefix.'.'.$this->column;
-        }
+	public function column($prefix)
+	{
+			return $prefix.'.'.$this->column;
+	}
 
-        /**
+	/**
 	 * Sets a particular value processed according
 	 * to the class's standards.
 	 *
@@ -90,8 +97,8 @@ abstract class Yada_Field_Core
 	 * to the class's standards.
 	 *
 	 * @param   Yada_Model  $model
-	 * @param   mixed        $value
-	 * @param   boolean      $loaded
+	 * @param   mixed		$value
+	 * @param   boolean	  $loaded
 	 * @return  mixed
 	 **/
 	public function get($model, $value)

@@ -19,7 +19,11 @@ Examples:
 		$users = Yada::factory('User');
 		$users->name->like('Bob%');
 		$users->load(20);
+		
+2. Get the next 10 user objects
 
+		$users->load(10,20);
+		
 2. Change their name to Robert.
 
 		$users->name->replace('Bob', 'Robert');
@@ -33,11 +37,19 @@ Examples:
 			// Update them individually
 			$user->save();
 		}
-		// Or as a set;
-		$user->save();
-		
-4. Create new records
-		$product = Yada::factory('User');
+		// Or make changes then update as a set;
+		$users->save();
+
+4. Modify sets of records without iterating and using regular expressions
+
+		$products = Yada::factory('Product');
+		$products->name->replace('exmple', 'example')
+		$products->name->like('%exmple%')
+		$products->save();
+
+5. Create new records
+
+		$product = Yada::factory('Product');
 		// With normal assignment statements
 		$product->name = 'Gizmo';
 		$product->price = 20;
@@ -51,4 +63,6 @@ Examples:
 		// Save the record.
 		$product->save();
 		
+
+
 More examples to come....
