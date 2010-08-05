@@ -2,6 +2,7 @@
 
 /*
  * Yada: Yet Another Data Abstraction
+ * @package Yada
  * @author Jeremy Fowler <jeremy.f76@gmail.com>
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
@@ -10,6 +11,7 @@
  * Currently, a primary key can be an integer, float, or a string.
  *
  */
+
 abstract class Yada_Field_Key_Primary extends Yada_Field_Key
 {
 	

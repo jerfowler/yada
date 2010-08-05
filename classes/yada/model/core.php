@@ -1,10 +1,15 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-/**
+/*
+ * Yada: Yet Another Data Abstraction
+ * @package Yada
+ * @author Jeremy Fowler <jeremy.f76@gmail.com>
+ * @copyright Copyright (c) 2010, Jeremy Fowler
+ * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
+ *
  * Yada_Model is the class all models must extend. It handles
  * various CRUD operations and relationships to other models.
  *
- * @package Yada
  */
 abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator, Countable
 {
