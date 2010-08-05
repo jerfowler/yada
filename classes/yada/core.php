@@ -4,21 +4,21 @@
  * Yada: Yet Another Data Abstraction
  * @author Jeremy Fowler <jeremy.f76@gmail.com>
  * @copyright Copyright (c) 2010, Jeremy Fowler
- * @license http://www.opensource.org/licenses/gpl-3.0.html GNU General Public License version 3 (GPLv3)
+ * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
 abstract class Yada_Core
 {
 	const OP_NOT   = 'not';
 	const OP_AND   = 'and';
-	const OP_OR	= 'or';
+	const OP_OR    = 'or';
 	const OP_BEGIN = 'begin';
 	const OP_END   = 'end';
-	const WILD	 = '%';
+	const WILD     = '%';
 
 	public static $_prefix = array(
 		'model'   => 'model_',
-		'meta'	=> 'yada_meta_',
+		'meta'    => 'yada_meta_',
 		'field'   => 'yada_field_',
 		'mapper'  => 'yada_mapper_',
 		'collect' => 'yada_collect_',
