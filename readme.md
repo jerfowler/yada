@@ -13,14 +13,18 @@ Credit and thanks goes out to those authors.
 
 Goals:
 
-1. Simple and intuitive to use
-2. Data source agnostic (SQL, NoSQL, FQL, XML, JSON) 
-3. Modular and Highly Extensible
+1. Simple and intuitive to use, joins are automatic, SQL is hidden
+2. Object Aggregation for a Modular Model Framework that is Highly Extensible
+3. Data source agnostic (SQL, NoSQL, FQL, YQL, XML, JSON) 
 4. Record level and Collection level modifications
-5. Minimal and efficient data retrieval
-6. Composite keys
-7. Domain models
-8. More... As I think of them...
+5. Minimal and efficient data retrieval and caching
+6. Composite/Polymophic Keys
+7. Calculated Fields
+8. Standard One-to-One, Many-to-One, Many-to-Many Relationships
+9. Hierarchical Relationships (Adjacency List, MPTT, Transitive Closure)
+10. Customizable Inputs & Forms
+11. Scaffolding system
+12. More... As I think of them...
 
 Examples:
 

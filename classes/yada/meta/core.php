@@ -5,15 +5,32 @@
  * @author Jeremy Fowler <jeremy.f76@gmail.com>
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
- *
+ */
+
+/**
  * Yada_Meta objects act as a registry of information
  *
  */
 abstract class Yada_Meta_Core implements Yada_Interface_Module
 {
+	/**
+	 *
+	 * @var <type>
+	 */
 	protected $_models = array();
+
+	/**
+	 *
+	 * @var <type>
+	 */
 	protected $_current;
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @param <type> $arguments
+	 * @return <type>
+	 */
 	public function __call($name, $arguments)
 	{
 		$meta = $this->meta();
@@ -23,9 +40,24 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		}
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @param Yada_Field $field 
+	 */
 	abstract protected function _initialize($name, Yada_Field $field);
+	
+	/**
+	 *
+	 * @param ArrayObject $attached 
+	 */
 	abstract protected function _attach(ArrayObject $attached);
 
+	/**
+	 *
+	 * @param <type> $object
+	 * @return <type>
+	 */
 	public function attach($object)
 	{
 		$class = get_class($object);
@@ -48,6 +80,11 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		return $object;
 	}
 
+	/**
+	 *
+	 * @param <type> $class
+	 * @return <type>
+	 */
 	public function model($class = NULL)
 	{
 		if ($class instanceof Yada_Model)
@@ -66,16 +103,29 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		return $this->_models[$this->_current]['object'];
 	}
 
+	/**
+	 *
+	 * @return <type>
+	 */
 	public function meta()
 	{
 		return $this->_models[$this->_current];
 	}
 
+	/**
+	 *
+	 * @return <type>
+	 */
 	public function fields()
 	{
 		return $this->_models[$this->_current]['fields'];
 	}
 
+	/**
+	 *
+	 * @param <type> $fields
+	 * @return Yada_Meta_Core
+	 */
 	public function initialize($fields)
 	{
 		$_model = $this->model();
@@ -118,6 +168,12 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		return $this;
 	}
 
+	/**
+	 *
+	 * @param <type> $model
+	 * @param <type> $name
+	 * @return <type>
+	 */
 	public function get_field($model, $name)
 	{
 		$this->model($model);
@@ -145,6 +201,13 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		return $this->mapper()->field($fields[$name]);
 	}
 
+	/**
+	 *
+	 * @param <type> $model
+	 * @param <type> $name
+	 * @param <type> $value
+	 * @return <type>
+	 */
 	public function set_field($model, $name, $value)
 	{
 		$this->model($model);
@@ -162,6 +225,10 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		}
 	}
 
+	/**
+	 *
+	 * @param Yada_Interface_Aggregate $object
+	 */
 	public function export(Yada_Interface_Aggregate $object)
 	{
 		$exported = isset(self::$_exported) ? self::$_exported : array();

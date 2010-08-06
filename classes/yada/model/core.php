@@ -10,43 +10,46 @@
 /**
  * Abstract Core Model Class
  *
+ * The Yada Model Object is a Dynamic Class that uses Object Aggregation of
+ * methods and properties of the classes that implement the Yada Module Interface.
+ *
+ * The Model class is intentionally left fairly empty and is basically a shell.
+ * This allows Yada to be very powerful and adapt to new technology by providing
+ * different modules that make up its core functionality.
+ *
  * Yada_Model_Core is the class all models must extend.
  *
  */
 abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator, Countable
 {
 	/**
-	 *
-	 * @var <type>
+	 * The default module types and their class name
+	 * @var array
 	 */
 	protected static $_types = array(
-		'meta'	=> 'Yada_Meta',
+		'meta'    => 'Yada_Meta',
 		'mapper'  => 'Yada_Mapper',
 		'collect' => 'Yada_Collect',
 		'record'  => 'Yada_Record',
 	);
 
 	/**
-	 *
-	 * @var <type>
+	 * An array of registered modules
+	 * @var array
 	 */
 	protected $_modules = array();
 
 	/**
+	 * An array of registered methods.
 	 *
-	 * @var <type>
+	 * Its an array of object references indexed by the dynamic method's name
+	 *
+	 * @var array
 	 */
 	protected $_methods = array();
 
 	/**
-	 *
-	 * @var <type>
-	 */
-	protected $_loaded = FALSE;
-	
-
-	/**
-	 *
+	 * Constructor
 	 * @param array $data
 	 */
 	public function __construct(array $data = NULL)
@@ -54,53 +57,60 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	}
 
 	/**
+	 * Magic Method used to call the aggregated dynamic methods
 	 *
-	 * @param <type> $name
-	 * @param <type> $arguments
-	 * @return <type>
+	 * @param string $name Dynamic method name
+	 * @param mixed $arguments
+	 * @return mixed
 	 */
 	public function __call($name, $arguments)
 	{
 		if(isset($this->_methods[$name]))
 		{
-			var_dump('Calling method: '.$name);
-			var_dump($arguments);
 			return $this->_methods[$name]->{$name}($this, $arguments);
 		}
 	}
 
 	/**
-	 *
-	 * @param <type> $name
-	 * @return <type>
+	 * Magic Method used to get the aggregated dynamic properties
+	 * @param string $name
+	 * @return mixed
 	 */
 	public function __get($name)
 	{
+		// If there exists a module with a type called $name
 		if (isset($this->_modules[$name]))
 		{
+			// Return the module instance by it's type name
 			return $this->_modules[$name];
 		}
+		// check to see if a module has implemented a get_field method
 		elseif (isset($this->_methods['get_field']))
 		{
+			// Return the result of the get_field property from the dynamic method
 			return $this->_methods['get_field']->get_field($this, $name);
 		}
+		// Default to the Meta Object get_field method
 		else
 		{
+			// Return the result of the Meta Object's get_field method
 			return $this->_modules['meta']->get_field($this, $name);
 		}
 	}
 
 	/**
-	 *
-	 * @param <type> $name
-	 * @param <type> $value
+	 * Magic Method used to set the aggregated dynamic properties
+	 * @param string $name
+	 * @param mixed $value
 	 */
 	public function __set($name, $value)
 	{
+		// Check to see if a module has implemented a set_field method
 		if (isset($this->_methods['set_field']))
 		{
 			$this->_methods['set_field']->set_field($this, $name, $value);
 		}
+		// Default to the Meta Object get_field method
 		else
 		{
 			$this->_modules['meta']->set_field($this, $name, $value);
@@ -108,6 +118,47 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	}
 
 	/**
+	 * Method to register a module
+	 *
+	 * @param Yada_Interface_Module $module
+	 * @param array $methods 
+	 */
+	public function register(Yada_Interface_Module $module, array $methods)
+	{
+		// Look for existing modules of the same type and unregister them
+		foreach (self::$_types AS $name => $class)
+		{
+			if ($module instanceof $class)
+			{
+				if (isset($this->_modules[$name]))
+				{
+					$this->unregister($this->_modules[$name]);
+				}
+				$this->_modules[$name] = $module;
+				break;
+			}
+		}
+		// Register all the methods this module exports
+		foreach($methods as $method)
+		{
+			if ( ! isset($this->_methods[$method]))
+			{
+				$this->_methods[$method] = $module;
+			}
+			else
+			{
+				// Throw an Exception if another module is exporting a method with the same name
+				throw new Kohana_Exception('Method ":method" is already registered by :class, :object is incompatible',
+					array(
+						':method' => $method,
+						':class' => get_class($this->_methods[$method]),
+						':object' => get_class($module)));
+			}
+		}
+	}
+
+	/**
+	 * Method to remove a registed module
 	 *
 	 * @param Yada_Interface_Module $object
 	 */
@@ -125,43 +176,6 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 			if ($module === $object)
 			{
 				unset($this->_modules[$name]);
-			}
-		}
-	}
-
-	/**
-	 *
-	 * @param Yada_Interface_Module $object
-	 * @param array $methods 
-	 */
-	public function register(Yada_Interface_Module $object, array $methods)
-	{
-		foreach (self::$_types AS $name => $class)
-		{
-			if ($object instanceof $class)
-			{
-				if (isset($this->_modules[$name]))
-				{
-					$this->unregister($this->_modules[$name]);
-				}
-				$this->_modules[$name] = $object;
-				break;
-			}
-		}
-
-		foreach($methods as $method)
-		{
-			if ( ! isset($this->_methods[$method]))
-			{
-				$this->_methods[$method] = $object;
-			}
-			else
-			{
-				throw new Kohana_Exception('Method ":method" is already registered by :class, :object is incompatible',
-					array(
-						':method' => $method,
-						':class' => get_class($this->_methods[$method]),
-						':object' => get_class($object)));
 			}
 		}
 	}
