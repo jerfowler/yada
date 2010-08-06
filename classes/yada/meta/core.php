@@ -8,15 +8,18 @@
  */
 
 /**
- * The Yada_Meta object acts as a repository of information and is the heart of
- * the Yada framework
+ * The Yada_Meta object acts as an information repository and is the heart of
+ * the Yada Framework
  *
  * Model meta data is indexed by the model's common name and the currently
  * focusd model name is stored for reference.
  *
  * ArrayObjects are used to store the meta data on models and fields in favor
- * of arrays to improve memory perfromance as objects are passed by reference
- * automatically when returned from or passed into methods.
+ * of arrays to make use of PHP's automatic passing objects by reference
+ * functionality when returned or passed into methods. Unless specifically passed
+ * by reference, arrays are copied thus increasing memory load and CPU cycles
+ *
+ * The ARRAY_AS_PROPS Flag is set on the ArrayObjects as an added benefit
  *
  */
 abstract class Yada_Meta_Core implements Yada_Interface_Module
@@ -67,54 +70,14 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	abstract protected function _initialize($name, Yada_Field $field);
 
 	/**
-	 * Attach a new Model Object by storing a new Meta ArrayObject
-	 *
-	 * @param Yada_Model $model
-	 * @param mixed $values
-	 * @return Yada_Model
+	 * Export any aggregate methods to the model
+	 * @param Yada_Interface_Aggregate $model
 	 */
-	public function attach(Yada_Model $model, $values = NULL)
+	public function export(Yada_Interface_Aggregate $model)
 	{
-		// Get the class and common names of the Model
-		$class = get_class($model);
-		$name = Yada::common_name('model', $class);
-
-		// Get the table name for the model, or use the inflector helper
-		$table = isset($model::$table) ? $model::$table : inflector::plural($name);
-
-		// Create a new ArrayObject to act as the Meta Object and initialize some properties
-		$this->_models[$class] = new ArrayObject(array(
-			'object'  => $model,
-			'name'    => $name,
-			'class'   => $class,
-			'table'   => $table,
-			// Unique Table aliases are used for all queires
-			'alias'   => count($this->_models).'_'.$table,
-			// Field Information is also stored in ArrayObjects
-			'fields'  => new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS),
-			// Each Model gets its own Mapper Object
-			'mapper' => NULL,
-			// Collect Objects are referenced here
-			'collect' => NULL,
-		), ArrayObject::ARRAY_AS_PROPS);
-
-		// Initialize objects of derived Meta classes
-		$this->_attach($this->_models[$class], $values);
-
-		// Set the focus
-		$this->_current = $class;
-
-		// Register aggregate methods
-		$this->export($model);
-
-		// Initialize the Model's field meta data
-		$model::initialize($model, $this);
-
-		// Initialize the Mapper Object
-		$this->_models[$class]['mapper'] = Yada::mapper($this, $model, $values);
-
-		// return the model
-		return $model;
+		// Exported method names are stored in a static variable
+		$exported = isset(self::$_exported) ? self::$_exported : array();
+		$model->register($this, $exported);
 	}
 
 	/**
@@ -160,6 +123,57 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	public function fields()
 	{
 		return $this->_models[$this->_current]['fields'];
+	}
+
+	/**
+	 * Attach a new Model Object by storing a new Meta ArrayObject
+	 *
+	 * @param Yada_Model $model
+	 * @param mixed $values
+	 * @return Yada_Model
+	 */
+	public function attach(Yada_Model $model, $values = NULL)
+	{
+		// Get the class and common name of the Model
+		$class = get_class($model);
+		$name = Yada::common_name('model', $class);
+
+		// Get the table name for the model, or use the inflector helper
+		$table = isset($model::$table) ? $model::$table : inflector::plural($name);
+
+		// Create a new ArrayObject to act as the Meta Object and initialize some properties
+		$this->_models[$class] = new ArrayObject(array(
+			'object'  => $model,
+			'name'    => $name,
+			'class'   => $class,
+			'table'   => $table,
+			// Unique Table aliases are used for all queires
+			'alias'   => count($this->_models).'_'.$table,
+			// Field Information is also stored in ArrayObjects
+			'fields'  => new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS),
+			// Each Model gets its own Mapper Object
+			'mapper' => NULL,
+			// Collect Objects are referenced here
+			'collect' => NULL,
+		), ArrayObject::ARRAY_AS_PROPS);
+
+		// Initialize objects of derived Meta classes
+		$this->_attach($this->_models[$class], $values);
+
+		// Set the focus
+		$this->_current = $class;
+
+		// Register aggregate methods
+		$this->export($model);
+
+		// Initialize the Model's field meta data
+		$model::initialize($model, $this);
+
+		// Initialize the Mapper Object
+		$this->_models[$class]['mapper'] = Yada::mapper($this, $model, $values);
+
+		// return the model
+		return $model;
 	}
 
 	/**
@@ -299,16 +313,4 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			return $this->mapper()->field($fields[$name])->$name = $value;
 		}
 	}
-
-	/**
-	 * Export any aggregate methods to the model
-	 * @param Yada_Interface_Aggregate $model
-	 */
-	public function export(Yada_Interface_Aggregate $model)
-	{
-		// Exported method names are stored in a static variable
-		$exported = isset(self::$_exported) ? self::$_exported : array();
-		$model->register($this, $exported);
-	}
-
 }
