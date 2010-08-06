@@ -28,7 +28,7 @@ abstract class Yada_Core
 	 * @var array	class prefixes for the various types
 	 */
 	public static $_prefix = array(
-		'model'   => 'model_',
+		'model'   => 'model_yada_',
 		'meta'    => 'yada_meta_',
 		'field'   => 'yada_field_',
 		'mapper'  => 'yada_mapper_',
@@ -76,7 +76,7 @@ abstract class Yada_Core
 	{
 		$class = Yada::class_name('model', $model);
 		$meta = Yada::meta($class);
-		return $meta->attach(Yada::model($model, $values));
+		return $meta->attach(Yada::model($model), $values);
 	}
 
 	/**
@@ -86,12 +86,11 @@ abstract class Yada_Core
 	 * will then need to be attached to a Meta object to work.
 	 *
 	 * @param string $model Common name of the model
-	 * @param <type> $values Array of key/value pairs used to initialize the model
 	 * @return Yada_Model
 	 */
-	public static function model($model, $values = NULL)
+	public static function model($model)
 	{
-		$class = Yada::class_name('model', $model);
+		$class = Yada::class_name('model');
 		return new $class($values);
 	}
 

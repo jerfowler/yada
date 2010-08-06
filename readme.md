@@ -4,7 +4,7 @@ For the [Kohana Framework](http://kohanaframework.org/).
 
 NOTICE: THIS IS PRE-ALPHA CODE... nothing much works yet...
 
-This is an entirely new Object-Relational Mapping module that uses both Active Record and Data Mapper Patterns. 
+This is an entirely new Object-Relational Mapping Framework that uses both Active Record and Data Mapper Patterns. 
 
 This library is mostly new code, but some ideas, functions, and possibly source code may have been borrowed 
 from similar libraries ([ORM](http://github.com/kohana/orm), [Sprig](http://github.com/shadowhand/sprig), [Jelly](http://github.com/jonathangeiger/kohana-jelly))

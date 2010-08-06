@@ -5,8 +5,10 @@
  * @author Jeremy Fowler <jeremy.f76@gmail.com>
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
- *
- * Yada_Meta objects act as a registry of information about a particular model.
+ */
+
+/**
+ * Yada_Meta objects act as a registry of information
  *
  */
 abstract class Yada_Meta_Default_Core extends Yada_Meta
