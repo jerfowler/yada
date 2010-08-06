@@ -13,6 +13,9 @@
 abstract class Yada_Mapper_Core implements Yada_Interface_Module
 {
 
+        /**
+         * @var object contains the
+         */
 	protected $_meta;
 	protected $_model;
 	protected $_stage;
@@ -34,7 +37,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	}
 
 	public function __set($name, $value) {
-		$this->field($name)->assign($value);
+		$this->field($name)->set($value);
 	}
 
 	abstract protected function _load($limit = NULL, $offset = NULL);

@@ -1,18 +1,24 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-
-/*
+/**
  * Yada: Yet Another Data Abstraction
  * @package Yada
  * @author Jeremy Fowler <jeremy.f76@gmail.com>
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
+ */
+
+/**
+ * Abstract Core Model Class
  *
- * Yada_Model is the class all models must extend. It handles
- * various CRUD operations and relationships to other models.
+ * Yada_Model_Core is the class all models must extend.
  *
  */
 abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator, Countable
 {
+	/**
+	 *
+	 * @var <type>
+	 */
 	protected static $_types = array(
 		'meta'	=> 'Yada_Meta',
 		'mapper'  => 'Yada_Mapper',
@@ -20,14 +26,39 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		'record'  => 'Yada_Record',
 	);
 
+	/**
+	 *
+	 * @var <type>
+	 */
 	protected $_modules = array();
-	protected $_methods = array();
-	protected $_loaded = FALSE;
 
+	/**
+	 *
+	 * @var <type>
+	 */
+	protected $_methods = array();
+
+	/**
+	 *
+	 * @var <type>
+	 */
+	protected $_loaded = FALSE;
+	
+
+	/**
+	 *
+	 * @param array $data
+	 */
 	public function __construct(array $data = NULL)
 	{
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @param <type> $arguments
+	 * @return <type>
+	 */
 	public function __call($name, $arguments)
 	{
 		if(isset($this->_methods[$name]))
@@ -38,6 +69,11 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		}
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @return <type>
+	 */
 	public function __get($name)
 	{
 		if (isset($this->_modules[$name]))
@@ -54,6 +90,11 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		}
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @param <type> $value
+	 */
 	public function __set($name, $value)
 	{
 		if (isset($this->_methods['set_field']))
@@ -66,6 +107,10 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		}
 	}
 
+	/**
+	 *
+	 * @param Yada_Interface_Module $object
+	 */
 	public function unregister(Yada_Interface_Module $object)
 	{
 		foreach ($this->_methods as $name => $module)
@@ -84,6 +129,11 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		}
 	}
 
+	/**
+	 *
+	 * @param Yada_Interface_Module $object
+	 * @param array $methods 
+	 */
 	public function register(Yada_Interface_Module $object, array $methods)
 	{
 		foreach (self::$_types AS $name => $class)
