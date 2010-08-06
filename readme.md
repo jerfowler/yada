@@ -1,4 +1,4 @@
-# Yada: Yet Another Data Abstraction
+# Yada: To know in a relational sense.
 
 For the [Kohana Framework](http://kohanaframework.org/).
 
