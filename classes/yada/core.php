@@ -90,8 +90,8 @@ abstract class Yada_Core
 	 */
 	public static function model($model)
 	{
-		$class = Yada::class_name('model');
-		return new $class($values);
+		$class = Yada::class_name('model', $model);
+		return new $class();
 	}
 
 	/**

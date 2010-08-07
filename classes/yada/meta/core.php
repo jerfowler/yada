@@ -56,6 +56,15 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	}
 
 	/**
+	 * PHP 5.3 magic method, shortcut for meta()
+	 */
+//	public function __invoke()
+//	{
+//		return $this->meta();
+//	}
+
+
+	/**
 	 * Abstract function called to intialize the properties of extended meta objects
 	 * @param ArrayObject $attached
 	 * @param mixed $values
@@ -109,19 +118,29 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 
 	/**
 	 * Returns the currently focused model's meta data
+	 * @param Yada_Model|string $model
 	 * @return ArrayObject
 	 */
-	public function meta()
+	public function meta($model = NULL)
 	{
+		if (isset($model))
+		{
+			$this->model($model);
+		}
 		return $this->_models[$this->_current];
 	}
 
 	/**
 	 * Returns the currently focused model's field meta data
+	 * @param Yada_Model|string $model
 	 * @return ArrayObject
 	 */
-	public function fields()
+	public function fields($model = NULL)
 	{
+		if (isset($model))
+		{
+			$this->model($model);
+		}
 		return $this->_models[$this->_current]['fields'];
 	}
 
@@ -218,11 +237,11 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 					}
 				}
 				// See if the field references "real" data in a column
-				elseif ($field instanceof Yada_Field_Interface_Column)
+				if ($field instanceof Yada_Field_Interface_Column)
 				{
 					$_fields[$name]['column'] = $field->column($_meta['alias']);
 					// All column fields are aliased
-					$_fields[$name]['alias'] = $_meta['alias'].'_'.$name;
+					$_fields[$name]['alias'] = $field->alias = $_meta['alias'].'_'.$name;
 					// See if we have a default value
 					$_fields[$name]['default'] = $field->default;
 				}
@@ -230,7 +249,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 				elseif ($field instanceof Yada_Field_Interface_Expression)
 				{
 					$_fields[$name]['expression'] = $field->expression($_meta['alias']);
-					$_fields[$name]['alias'] = $_meta['alias'].'_'.$name;
+					$_fields[$name]['alias'] = $field->alias = $_meta['alias'].'_'.$name;
 				}
 				// Initialize objects of derived Meta classes
 				$this->_initialize($name, $field);

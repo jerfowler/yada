@@ -47,6 +47,9 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	 * @var array
 	 */
 	public static $mapped = array(
+		'alliases'   => array('Yada_Field', 'alias'),
+		'columns' => 'Yada_Field_Interface_Column',
+		'expressions' => 'Yada_Field_Interface_Expression',
 		// Map all Fields that are keys
 		'keys'     => 'Yada_Field_Key',
 		// Map all the Field's default values
@@ -80,10 +83,12 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 		// See if the mapped index exists
 		if(isset(self::$mapped[$name]))
 		{
-			// get the model and values from the passed arguments
-			list ($model, $values) = $arguments;
-			// focus the model
-			$this->model($model);
+//			// get the model and values from the passed arguments
+//			list ($model, $values) = $arguments;
+//			// focus the model
+//			$this->model($model);
+//
+			$values = NULL;
 			// return the mapped field values
 			return $this->get_map($name, $values);
 		}
@@ -94,7 +99,7 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	 *
 	 * @param ArrayObject $attached
 	 */
-	protected function _attach(ArrayObject $attached)
+	protected function _attach(ArrayObject $attached, $values = NULL)
 	{
 		$attached['maps'] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
 		if (isset(self::$mapped))
