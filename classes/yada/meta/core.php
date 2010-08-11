@@ -250,25 +250,25 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	 *
 	 * This method is called from the Model's initialize static function
 	 *
-	 * @param ArrayObject $fields
+	 * @param Array $init
 	 */
 
-	public function initialize(Array &$init)
+	public function initialize(Array $init)
 	{
 		$meta = $this->meta();
 		foreach($init as $name => $value)
 		{
-			$meta[$name] =& $value;
+			$meta[$name] = $value;
 		}
 
 		// Initialize the Model's field meta data
-		//$meta['fields'] = new ArrayObject($meta['fields'], ArrayObject::ARRAY_AS_PROPS);
+		$meta['fields'] = new ArrayObject($meta['fields'], ArrayObject::ARRAY_AS_PROPS);
 		foreach ($meta['fields'] as $name => $field)
 		{
 			if ($field instanceof Yada_Field)
 			{
 				// Initalize the field object
-				$field->initialize($this, $this->model, $name, $this->alias);
+				$field->initialize($this, $this->model(), $name, $this->alias);
 
 				// Initialize objects of derived Meta classes
 				$this->_initialize($name, $field);

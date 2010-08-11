@@ -13,9 +13,9 @@
 
 abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implements Yada_Field_Interface_Through
 {
-	public function initialize($meta, $model, $column)
+	public function initialize(Yada_Meta $meta, Yada_Model $model, $name, $alias)
 	{
-		parent::initialize($meta, $model, $column);
+		parent::initialize($meta, $model, $name, $alias);
 		if (! $this->through)
 		{
 			throw new Kohana_Exception(
@@ -40,14 +40,17 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 		// Link the models back the other direction
 		$related->link($through);
 
+		// Focus the related model
+		$this->meta->model($related);
+		
 		return $related;
 	}
 
 	/**
 	 *
-	 * @param Yada_Field_Interface_Through $through
+	 * @param Yada_Field_Foreign $through
 	 */
-	public function link(Yada_Field_Interface_Through $through)
+	public function link(Yada_Field_Foreign $through)
 	{
 		if ( ! $this->through instanceof Yada_Field_Foreign)
 		{
@@ -105,7 +108,7 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 			}
 			else
 			{
-				throw new Kohana_Exception('Invalid through value for Field :field in Model :Model', array(
+				throw new Kohana_Exception('Invalid through value for Field :field in Model :model', array(
 					':field' => $this->name, ':model' => Yada::common_name('model', $this->model)
 				));
 			}

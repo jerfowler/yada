@@ -87,7 +87,6 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 			// Get the Current Meta ArrayObject
 			$meta = $this->meta();
 		}
-
 		// See if the property exists and return it
 		if ($meta->offsetExists($name))
 		{
@@ -105,6 +104,11 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 			// return the mapped field values
 			return $this->get_map($name, $values);
 		}
+		else
+		{
+			throw new Kohana_Exception('Property :name doesn\'t exist in the Meta Object', array(
+				':name' => $name));
+		}
 	}
 
 	/**
@@ -115,7 +119,7 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	protected function _attach(ArrayObject $attached, $values = NULL)
 	{
 		$attached['maps'] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
-		foreach ($this->get_mapped() as $map => $values)
+		foreach (self::$mapped as $map => $values)
 		{
 			$attached->maps[$map] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
 		}
@@ -133,13 +137,13 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 		$_maps = $this->maps();
 
 		// iterate through each of the mapped field types
-		foreach ($this->get_mapped() as $map => $filter)
+		foreach (self::$mapped as $map => $filter)
 		{
 			list($type, $search) = $filter;
 			switch ($type) 
 			{
 				case 'class':
-					foreach ((array)$search as $filter)
+					foreach ((array)$search as $class)
 					{
 						if ($field instanceof $class)
 						{
@@ -150,14 +154,14 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 				break;
 				case 'property':
 					list($classes, $properties) = $search;
-					foreach ((array)$classes as $filter)
+					foreach ((array)$classes as $class)
 					{
 						if ($field instanceof $class)
 						{
 							$_maps[$map][$name] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
 							foreach ((array)$properties as $property)
 							{
-								$_maps[$map][$name][$property] =& $field->$property;
+								$_maps[$map][$name][$property] = $field->$property;
 							}
 							break;
 						}
@@ -165,7 +169,7 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 				break;
 				case 'matches':
 					list($classes, $condition) = $search;
-					foreach ((array)$classes as $filter)
+					foreach ((array)$classes as $class)
 					{
 						if ($field instanceof $class)
 						{
@@ -181,13 +185,13 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 			}
 		}
 	}
-
-	public function get_mapped()
-	{
-		$model = $this->model();
-		$mapped = isset(self::$mapped) ? self::$mapped : array();
-		return (isset($model::$mapped)) ? array_merge($mapped, $model::$mapped) : $mapped;
-	}
+//
+//	public function get_mapped()
+//	{
+//		return isset($this->mapped)
+//			? array_merge(self::$mapped, $this->mapped)
+//			: self::$mapped;
+//	}
 
 
 	/**

@@ -46,7 +46,7 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 			}
 
 			// Focus the related model
-			$this->meta->model($related);
+			$this->meta->model($this->related);
 
 			// Get the related model's fields
 			$fields = $this->meta->fields();
