@@ -8,8 +8,7 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
-interface Yada_Field_Interface_Column
+interface Yada_Field_Interface_Column extends Yada_Field_Interface_Aliased
 {
-	public function column($alias);
-	public function save($model, $value, $loaded);
+
 }

@@ -20,7 +20,7 @@ abstract class Yada_Field_Data_Boolean extends Yada_Field_Data
 		$this->label_true = (isset($this->label_true)) ? $this->label_true : 'Yes';
 
 		// How FALSE is represented in the database
-		$this->false = (isset($this->false)) ? $this->false : 1;
+		$this->false = (isset($this->false)) ? $this->false : 0;
 
 		// How FALSE is represented to users (mainly in forms)
 		$this->label_false = (isset($this->label_false)) ? $this->label_false : 'No';
@@ -37,16 +37,4 @@ abstract class Yada_Field_Data_Boolean extends Yada_Field_Data
 		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
 	}
 
-	/**
-	 * Returns the value as it should be represented in the database
-	 *
-	 * @param   Jelly_Model  $model
-	 * @param   mixed		$value
-	 * @param   boolean	  $loaded
-	 * @return  mixed
-	 */
-	public function save($model, $value, $loaded)
-	{
-		return ($value) ? $this->true : $this->false;
-	}
 }

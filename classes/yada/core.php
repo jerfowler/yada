@@ -16,14 +16,6 @@
   */
 abstract class Yada_Core
 {
-
-	const OP_NOT   = 'not';
-	const OP_AND   = 'and';
-	const OP_OR    = 'or';
-	const OP_BEGIN = 'begin';
-	const OP_END   = 'end';
-	const WILD     = '%';
-
 	/**
 	 * @var array	class prefixes for the various types
 	 */
@@ -86,12 +78,13 @@ abstract class Yada_Core
 	 * will then need to be attached to a Meta object to work.
 	 *
 	 * @param string $model Common name of the model
+	 * @param array $init fields and other meta data
 	 * @return Yada_Model
 	 */
-	public static function model($model)
+	public static function model($model, $init = NULL)
 	{
 		$class = Yada::class_name('model', $model);
-		return new $class();
+		return new $class($init);
 	}
 
 	/**

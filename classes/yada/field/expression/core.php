@@ -7,31 +7,20 @@
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
- 
-abstract class Yada_Field_Data_Core extends Yada_Field implements Yada_Field_Interface_Column
-{
 
-	/**
-	 *
-	 * @param Yada_Meta $meta
-	 * @param Yada_Model $model
-	 * @param <type> $name
-	 * @param <type> $alias
-	 */
+abstract class Yada_Field_Expression_Core extends Yada_Field implements Yada_Field_Interface_Expression
+{
 	public function initialize(Yada_Meta $meta, Yada_Model $model, $name, $alias)
 	{
 		parent::initialize($meta, $model, $name, $alias);
-		$this->column = isset($this->column) ? $alias.'.'.$this->column : $alias.'.'.$this->name;
+		if ( ! isset ($this->expression))
+		{
+			throw new Exception('You must specifiy an Expression for '.Yada::common_name('model', $model).'->'.$name);
+		}
 	}
 
-	/**
-	 *
-	 * @param  mixed   $value
-	 * @return mixed
-	 */
 	public function set($value)
 	{
-		return $value;
+		return $this->expression = $value;
 	}
-
 }

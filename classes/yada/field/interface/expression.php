@@ -8,7 +8,7 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
-interface Yada_Field_Interface_Expression
+interface Yada_Field_Interface_Expression extends Yada_Field_Interface_Aliased
 {
-	public function expression($alias);
+
 }

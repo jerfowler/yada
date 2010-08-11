@@ -10,8 +10,16 @@
  
 abstract class Yada_Field_Core
 {
+	/**
+	 *
+	 * @var <type>
+	 */
 	protected $_props;
 
+	/**
+	 *
+	 * @param <type> $options
+	 */
 	public function __construct($options = array())
 	{
 		$defaults = array(
@@ -24,12 +32,7 @@ abstract class Yada_Field_Core
 			'callbacks' => array(),
 		);
 
-		// Assume it's the column name
-		if (is_string($options))
-		{
-			$defaults['column'] = $options;
-		}
-		elseif (is_array($options))
+		if (is_array($options))
 		{
 			$defaults = Arr::merge($defaults, $options);
 		}
@@ -44,17 +47,34 @@ abstract class Yada_Field_Core
 		$this->_props = new ArrayObject($defaults, ArrayObject::ARRAY_AS_PROPS);
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @return <type>
+	 */
 	public function __get($name)
 	{
 		return ($this->_props->offsetExists($name)) ? $this->_props[$name] : NULL;
 	}
 
+	/**
+	 *
+	 * @param <type> $name
+	 * @param <type> $value
+	 */
 	public function __set($name, $value)
 	{
 		$this->_props[$name] = $value;
 	}
 
-	public function initialize($meta, $model, $column)
+	/**
+	 *
+	 * @param Yada_Meta $meta
+	 * @param Yada_Model $model
+	 * @param <type> $name
+	 * @param <type> $alias
+	 */
+	public function initialize(Yada_Meta $meta, Yada_Model $model, $name, $alias)
 	{
 		$this->meta = $meta;
 
@@ -62,49 +82,33 @@ abstract class Yada_Field_Core
 		$this->model = $model;
 
 		// This is for naming form fields
-		$this->name = $column;
+		$this->name = $name;
 
-		if ( ! $this->column)
-		{
-			$this->column = $column;
-		}
+		// This is the alias of the table
+		$this->alias = $alias;
 
 		// Check for a name, because we can easily provide a default
 		if ( ! $this->label)
 		{
-			$this->label = inflector::humanize($column);
+			$this->label = inflector::humanize($name);
 		}
-	}
-
-	public function column($prefix)
-	{
-			return $prefix.'.'.$this->column;
-	}
-
-	/**
-	 * Sets a particular value processed according
-	 * to the class's standards.
-	 *
-	 * @param   mixed  $value
-	 * @return  mixed
-	 **/
-	public function set($value)
-	{
-		return $value;
 	}
 
 	/**
 	 * Returns a particular value processed according
 	 * to the class's standards.
 	 *
-	 * @param   Yada_Model  $model
-	 * @param   mixed		$value
-	 * @param   boolean	  $loaded
+	 * @param   mixed
 	 * @return  mixed
 	 **/
-	public function get($model, $value)
+	public function get($value)
 	{
 		return $value;
+	}
+
+	public function save()
+	{
+	    
 	}
 
 }

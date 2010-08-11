@@ -34,6 +34,12 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	);
 
 	/**
+	 *
+	 * @var <type> 
+	 */
+	public $_init = array();
+
+	/**
 	 * An array of registered modules
 	 * @var array
 	 */
@@ -50,10 +56,14 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 
 	/**
 	 * Constructor
-	 * @param array $data
+	 * @param array $init
 	 */
-	public function __construct(array $data = NULL)
+	public function __construct($init = NULL)
 	{
+		if (is_array($init))
+		{
+			$this->_init = $init;
+		}
 	}
 
 	/**

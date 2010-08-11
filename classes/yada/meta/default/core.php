@@ -47,17 +47,17 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	 * @var array
 	 */
 	public static $mapped = array(
-		'alliases'   => array('Yada_Field', 'alias'),
-		'columns' => 'Yada_Field_Interface_Column',
-		'expressions' => 'Yada_Field_Interface_Expression',
+		'alliases'    => array('property', array('Yada_Field_Interface_Aliased', 'alias')),
+		'columns'     => array('class', 'Yada_Field_Interface_Column'),
+		'expressions' => array('class', 'Yada_Field_Interface_Expression'),
 		// Map all Fields that are keys
-		'keys'     => 'Yada_Field_Key',
+		'keys'        => array('class', 'Yada_Field_Key'),
 		// Map all the Field's default values
-		'defaults' => array('Yada_Field_Interface_Saveable', 'default'),
+		'defaults'    => array('property', array('Yada_Field_Interface_Column', 'default')),
 		// Map all the Field's label values
-		'labels'   => array('Yada_Field', 'label'),
+		'labels'      => array('property', array('Yada_Field', 'label')),
 		// Map all Fields that are unique
-		'unique'   => array('Yada_Field_Interface_Saveable', array('unique', TRUE)),
+		'unique'      => array('matches', array('Yada_Field', array('unique', TRUE))),
 	);
 
 	/**
@@ -72,16 +72,29 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	 */
 	public function __call($name, $arguments)
 	{
-		// Get the Meta ArrayObject
-		$meta = $this->meta();
+		// See if we have been passed a model
+		if (count($arguments) == 1)
+		{
+			list($model) = $arguments;
+			if ($model instanceof Yada_Model)
+			{
+				// Get the Model's Meta ArrayObject
+				$meta = $this->meta($model);
+			}
+		}
+		else
+		{
+			// Get the Current Meta ArrayObject
+			$meta = $this->meta();
+		}
+
 		// See if the property exists and return it
 		if ($meta->offsetExists($name))
 		{
 			return $meta[$name];
 		}
-
 		// See if the mapped index exists
-		if(isset(self::$mapped[$name]))
+		elseif(isset(self::$mapped[$name]))
 		{
 //			// get the model and values from the passed arguments
 //			list ($model, $values) = $arguments;
@@ -102,12 +115,9 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 	protected function _attach(ArrayObject $attached, $values = NULL)
 	{
 		$attached['maps'] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
-		if (isset(self::$mapped))
+		foreach ($this->get_mapped() as $map => $values)
 		{
-			foreach (self::$mapped as $map => $class)
-			{
-				$attached->maps[$map] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
-			}
+			$attached->maps[$map] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
 		}
 	}
 
@@ -122,42 +132,63 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 		// get the maps Meta ArrayObject
 		$_maps = $this->maps();
 
-		// get the Fields Meta ArrayObject
-		$_fields = $this->fields();
-
 		// iterate through each of the mapped field types
-		foreach (self::$mapped as $map => $class)
+		foreach ($this->get_mapped() as $map => $filter)
 		{
-			// Check for an array
-			if (is_array($class))
+			list($type, $search) = $filter;
+			switch ($type) 
 			{
-				list($class, $property) = $class;
-				// See if the class matches
-				if ($field instanceof $class)
-				{
-					if (is_array($property))
+				case 'class':
+					foreach ((array)$search as $filter)
 					{
-						// Map the ArrayObject if the property matches
-						list($property, $value) = $property;
-						if ($field->$property === $value)
+						if ($field instanceof $class)
 						{
-							$_maps[$map][$name] = $_fields[$name];
+							$_maps[$map][$name] = $field;
+							break;
 						}
-					}
-					// Map the value of the property
-					else
+					}    
+				break;
+				case 'property':
+					list($classes, $properties) = $search;
+					foreach ((array)$classes as $filter)
 					{
-						$_maps[$map][$name] = $field->$property;
-					}
-				}
-			}
-			// Map the ArrayObject if the class matches
-			elseif ($field instanceof $class)
-			{
-				$_maps[$map][$name] = $_fields[$name];
+						if ($field instanceof $class)
+						{
+							$_maps[$map][$name] = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
+							foreach ((array)$properties as $property)
+							{
+								$_maps[$map][$name][$property] =& $field->$property;
+							}
+							break;
+						}
+					} 					
+				break;
+				case 'matches':
+					list($classes, $condition) = $search;
+					foreach ((array)$classes as $filter)
+					{
+						if ($field instanceof $class)
+						{
+							list($property, $value) = $condition;
+							if ($field->$property === $value)
+							{
+								$_maps[$map][$name] = $field;
+								break;
+							}
+						}
+					} 				    
+				break;			    
 			}
 		}
 	}
+
+	public function get_mapped()
+	{
+		$model = $this->model();
+		$mapped = isset(self::$mapped) ? self::$mapped : array();
+		return (isset($model::$mapped)) ? array_merge($mapped, $model::$mapped) : $mapped;
+	}
+
 
 	/**
 	 * Return the mapped values
