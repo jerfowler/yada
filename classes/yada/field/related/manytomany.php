@@ -30,20 +30,22 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 	 */
 	public function related()
 	{
-		// Get the through field to the through model
-		// Set the through field's related to this
-		$through = $this->through();
+		if ( ! $this->related instanceof Yada_Field_Related_ManyToMany)
+		{
+			// Get the through field to the through model
+			// Set the through field's related to this
+			$through = $this->through();
 
-		// Set/Get the related field to the related model
-		$related = parent::related();
+			// Set/Get the related field to the related model
+			$related = parent::related();
 
-		// Link the models back the other direction
-		$related->link($through);
+			// Link the models back the other direction
+			$related->link($through);
 
+		}
 		// Focus the related model
-		$this->meta->model($related);
-		
-		return $related;
+		$this->meta->model($this->related);
+		return $this->related;
 	}
 
 	/**
@@ -70,11 +72,11 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 				));
 			}
 
-			// Focus the through model
-			$this->meta->model($through->model);
+			// Focus the through model and get the meta data
+			$meta = $this->meta->meta($through->model);
 
 			// Get the Yada Field Object that points back to this model
-			$field = $this->meta->fields->$field;
+			$field = $meta->fields->$field;
 
 			// Set that field's properties to point back to this model/field
 			$field->related = $this;
@@ -119,11 +121,11 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 				$model = Yada::model($model, $init);
 			}
 
-			// Focus the through model
-			$this->meta->model($model);
+			// Focus the through model and get the meta data
+			$meta = $this->meta->meta($model);
 
 			// Get the Yada Field Object that points back to this model
-			$field = $this->meta->fields->$field;
+			$field = $meta->fields->$field;
 
 			// Set that field's properties to point back to this model/field
 			$field->related = $this;
@@ -132,6 +134,8 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 			$this->through = $field;
 
 		}
+		// Focus the through model
+		$this->meta->model($this->through);
 		// return the through model
 		return $this->through;
 	}

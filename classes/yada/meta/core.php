@@ -36,10 +36,17 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	 */
 	protected $_current;
 
+	/**
+	 *
+	 * @var ArrayObject
+	 */
+	protected $_meta;
+
 	public function __construct()
 	{
 		$this->_models = new SplObjectStorage();
 		$this->_current = NULL;
+		$this->_meta = NULL;
 	}
 
 	/**
@@ -58,18 +65,14 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			if ($model instanceof Yada_Model)
 			{
 				// Get the Model's Meta ArrayObject
-				$meta = $this->meta($model);
+				$this->meta($model);
 			}
 		}
-		else
-		{
-			// Get the Current Meta ArrayObject
-			$meta = $this->meta();
-		}
+
 		// See if the property exists and return it
-		if ($meta->offsetExists($name))
+		if ($this->_meta->offsetExists($name))
 		{
-			return $meta[$name];
+			return $this->_meta[$name];
 		}
 		else
 		{
@@ -83,7 +86,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	 */
 	public function __invoke()
 	{
-		return $this->meta();
+		return $this->_meta;
 	}
 
 	/**
@@ -93,14 +96,12 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 	 */
 	public function __set($name, $value)
 	{
-		$meta = $this->meta();
-		$meta[$name] = $value;
+		$this->_meta[$name] = $value;
 	}
 
 	public function __get($name)
 	{
-		$meta = $this->meta();
-		return isset($meta[$name]) ? $meta[$name] : NULL;
+		return isset($this->_meta[$name]) ? $this->_meta[$name] : NULL;
 	}
 
 	/**
@@ -183,8 +184,22 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		if (isset($model))
 		{
 			$this->model($model);
+
 		}
-		return $this->_models->offsetGet($this->_current);
+
+		$stack = xdebug_get_function_stack();
+		$out = array();
+		foreach ($stack as $num => $call)
+		{
+		   // if ($num < 5) continue;
+		    if (! isset($call['function'])) continue;
+		    $class = (isset($call['class'])) ? $call['class'].'::' : 'Function ';
+		    $out[] = $class.$call['function'].' ('.$call['line'].')';
+		}
+		var_dump($out);
+		var_dump(get_class($this->_current));
+
+		return $this->_meta = $this->_models->offsetGet($this->_current);
 	}
 
 	/**
@@ -202,7 +217,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		$plural = inflector::plural($name);
 
 		// Create a new ArrayObject to act as the Meta Object and initialize some properties
-		$meta = new ArrayObject(array(
+		$this->_meta = new ArrayObject(array(
 			'name'    => $name,
 			'class'   => $class,
 			'plural'   => $plural,
@@ -220,23 +235,23 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		), ArrayObject::ARRAY_AS_PROPS);
 
 		// Initialize objects of derived Meta classes
-		$this->_attach($meta, $values);
+		$this->_attach($this->_meta, $values);
 
 		// Register children if there is a parent object
 		if (isset($this->_current))
 		{
-			$this->children->attach($model, $meta);
+			$this->children->attach($model, $this->_meta);
 		}
 
 		// Attach the model and meta data, set the focus
-		$this->_models->attach($model, $meta);
+		$this->_models->attach($model, $this->_meta);
 		$this->_current = $model;
 
 		// Initialize the Model
 		$model::initialize($model, $this);
 
 		// Initialize the Mapper Object
-		$meta['mapper'] = Yada::mapper($this, $model, $values);
+		$this->_meta['mapper'] = Yada::mapper($this, $model, $values);
 
 		// Register aggregate methods
 		$this->export($model);
@@ -255,15 +270,14 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 
 	public function initialize(Array $init)
 	{
-		$meta = $this->meta();
 		foreach($init as $name => $value)
 		{
-			$meta[$name] = $value;
+			$this->_meta[$name] = $value;
 		}
 
 		// Initialize the Model's field meta data
-		$meta['fields'] = new ArrayObject($meta['fields'], ArrayObject::ARRAY_AS_PROPS);
-		foreach ($meta['fields'] as $name => $field)
+		$this->_meta['fields'] = new ArrayObject($this->_meta['fields'], ArrayObject::ARRAY_AS_PROPS);
+		foreach ($this->_meta['fields'] as $name => $field)
 		{
 			if ($field instanceof Yada_Field)
 			{

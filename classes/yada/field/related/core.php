@@ -45,14 +45,11 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 				));
 			}
 
-			// Focus the related model
-			$this->meta->model($this->related);
+			// Focus the through model and get the meta data
+			$meta = $this->meta->meta($this->related);
 
-			// Get the related model's fields
-			$fields = $this->meta->fields();
-
-			// Get the related Yada Field Object that points back to this model
-			$field = $fields->$field;
+			// Get the Yada Field Object that points back to this model
+			$field = $meta->fields->$field;
 
 			// Set that field's related to point back to this field
 			$field->related = $this;
@@ -60,8 +57,8 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 			// Save the reference to that field
 			$this->related = $field;
 		}
-
-		// return the related field
+		// Focus the related model
+		$this->meta->model($this->related);
 		return $this->related;
 	}
 }

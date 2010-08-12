@@ -79,18 +79,14 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 			if ($model instanceof Yada_Model)
 			{
 				// Get the Model's Meta ArrayObject
-				$meta = $this->meta($model);
+				$this->meta($model);
 			}
 		}
-		else
-		{
-			// Get the Current Meta ArrayObject
-			$meta = $this->meta();
-		}
+
 		// See if the property exists and return it
-		if ($meta->offsetExists($name))
+		if ($this->_meta->offsetExists($name))
 		{
-			return $meta[$name];
+			return $this->_meta[$name];
 		}
 		// See if the mapped index exists
 		elseif(isset(self::$mapped[$name]))
