@@ -128,6 +128,30 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	}
 
 	/**
+	 *
+	 * @param string $name
+	 * @return boolean 
+	 */
+	public function  __isset($name)
+	{
+		// If there exists a module with a type called $name
+		if (isset($this->_modules[$name]))
+		{
+			return TRUE;
+		}
+	}
+
+	/**
+	 *
+	 * @param string $name
+	 */
+	public function __unset($name)
+	{
+		// *** Probably need to control this more...
+		unset($this->_modules[$name]);
+	}
+
+	/**
 	 * Method to register a module
 	 *
 	 * @param Yada_Interface_Module $module

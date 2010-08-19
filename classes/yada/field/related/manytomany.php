@@ -32,19 +32,17 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 	{
 		if ( ! $this->related instanceof Yada_Field_Related_ManyToMany)
 		{
+			// Set/Get the related field to the related model
+			$related = parent::related();
+
 			// Get the through field to the through model
 			// Set the through field's related to this
 			$through = $this->through();
-
-			// Set/Get the related field to the related model
-			$related = parent::related();
 
 			// Link the models back the other direction
 			$related->link($through);
 
 		}
-		// Focus the related model
-		$this->meta->model($this->related);
 		return $this->related;
 	}
 
@@ -52,7 +50,7 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 	 *
 	 * @param Yada_Field_Foreign $through
 	 */
-	public function link(Yada_Field_Foreign $through)
+	public function link(Yada_Field_Key $through)
 	{
 		if ( ! $this->through instanceof Yada_Field_Foreign)
 		{

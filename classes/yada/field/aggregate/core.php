@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2010, Jeremy Fowler
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
- 
-interface Yada_Field_Interface_Expression extends Yada_Field_Interface_Aliased
+
+class Yada_Field_Aggregate_Core extends Yada_Field_Expression implements Yada_Field_Interface_Aggregate
 {
-	public function expression();
+
 }

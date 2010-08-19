@@ -8,7 +8,7 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
-abstract class Yada_Field_Key_Core extends Yada_Field implements Yada_Field_Interface_Column
+abstract class Yada_Field_Key_Core extends Yada_Field_Data
 {
 
 }

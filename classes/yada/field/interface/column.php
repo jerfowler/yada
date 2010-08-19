@@ -10,5 +10,5 @@
  
 interface Yada_Field_Interface_Column extends Yada_Field_Interface_Aliased
 {
-
+	public function column();
 }

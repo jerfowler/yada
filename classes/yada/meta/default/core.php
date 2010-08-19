@@ -78,8 +78,8 @@ abstract class Yada_Meta_Default_Core extends Yada_Meta
 			list($model) = $arguments;
 			if ($model instanceof Yada_Model)
 			{
-				// Get the Model's Meta ArrayObject
-				$this->meta($model);
+				// Focus the model & meta data
+				$this->model($model);
 			}
 		}
 

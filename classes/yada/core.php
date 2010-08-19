@@ -37,7 +37,10 @@ abstract class Yada_Core
 	 */
 	public static function class_name($type, $name)
 	{
-		return strtolower(Yada::$_prefix[$type].$name);
+		$prefix = isset(Yada::$_prefix[$type])
+			? Yada::$_prefix[$type]
+			: 'yada_'.$type.'_';
+		return strtolower($prefix.$name);
 	}
 
 	/**
@@ -50,7 +53,10 @@ abstract class Yada_Core
 	public static function common_name($type, $name)
 	{
 		$name = is_object($name) ? get_class($name) : $name;
-		return substr($name, strlen(Yada::$_prefix[$type]));
+		$prefix = isset(Yada::$_prefix[$type])
+			? Yada::$_prefix[$type]
+			: 'yada_'.$type.'_';
+		return substr($name, strlen($prefix));
 	}
 
 	/**
@@ -172,4 +178,21 @@ abstract class Yada_Core
 		$class = Yada::class_name('record', $record);
 		return new $class($meta, $model, $data);
 	}
+
+	public static function debug($item)
+	{
+
+		$stack = xdebug_get_function_stack();
+		$out = array();
+		foreach ($stack as $num => $call)
+		{
+			// if ($num < 5) continue;
+			if (! isset($call['function'])) continue;
+			$class = (isset($call['class'])) ? $call['class'].'::' : 'Function ';
+			$out[] = $class.$call['function'].' ('.$call['line'].')';
+		}
+		//var_dump($out);
+		//var_dump($item);
+	}
+
 }

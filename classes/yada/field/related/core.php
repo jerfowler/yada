@@ -45,11 +45,19 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 				));
 			}
 
-			// Focus the through model and get the meta data
+			// Get the mapper and save it
+			$this->mapper = $this->meta->mapper();
+
+			// Get the meta data of the related model
 			$meta = $this->meta->meta($this->related);
 
 			// Get the Yada Field Object that points back to this model
 			$field = $meta->fields->$field;
+			//$field->mapper = $meta->mapper;
+
+			// Join the fields with the mappers....
+			$this->mapper->field($this)->related('join', $field);
+			//$field->mapper->field($field)->related($this);
 
 			// Set that field's related to point back to this field
 			$field->related = $this;
@@ -57,8 +65,6 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 			// Save the reference to that field
 			$this->related = $field;
 		}
-		// Focus the related model
-		$this->meta->model($this->related);
 		return $this->related;
 	}
 }

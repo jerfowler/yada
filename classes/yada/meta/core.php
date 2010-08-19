@@ -64,8 +64,8 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			list($model) = $arguments;
 			if ($model instanceof Yada_Model)
 			{
-				// Get the Model's Meta ArrayObject
-				$this->meta($model);
+				// Focus the model & meta data
+				$this->model($model);
 			}
 		}
 
@@ -91,17 +91,22 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 
 	/**
 	 *
-	 * @param <type> $name
-	 * @param <type> $value 
+	 * @param string $name
+	 * @param mixed $value
 	 */
 	public function __set($name, $value)
 	{
 		$this->_meta[$name] = $value;
 	}
 
+	/**
+	 *
+	 * @param string $name
+	 * @return mixed
+	 */
 	public function __get($name)
 	{
-		return isset($this->_meta[$name]) ? $this->_meta[$name] : NULL;
+		return $this->_meta->offsetExists($name) ? $this->_meta[$name] : NULL;
 	}
 
 	/**
@@ -146,6 +151,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			else
 			{
 				$this->_current = $model;
+				$this->_meta = $this->_models->offsetGet($this->_current);
 			}
 		}
 		elseif (is_string($model))
@@ -186,20 +192,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			$this->model($model);
 
 		}
-
-		$stack = xdebug_get_function_stack();
-		$out = array();
-		foreach ($stack as $num => $call)
-		{
-		   // if ($num < 5) continue;
-		    if (! isset($call['function'])) continue;
-		    $class = (isset($call['class'])) ? $call['class'].'::' : 'Function ';
-		    $out[] = $class.$call['function'].' ('.$call['line'].')';
-		}
-		var_dump($out);
-		var_dump(get_class($this->_current));
-
-		return $this->_meta = $this->_models->offsetGet($this->_current);
+		return $this->_meta;
 	}
 
 	/**
@@ -225,6 +218,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			'alias'   => $this->_models->count().'_'.$plural,
 			// Field Information is also stored in ArrayObjects
 			'fields'  => array(),
+			'key'	  => NULL,
 			// related models
 			'parent'  => $this->_current,
 			'children' => new SplObjectStorage(),
@@ -279,6 +273,10 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		$this->_meta['fields'] = new ArrayObject($this->_meta['fields'], ArrayObject::ARRAY_AS_PROPS);
 		foreach ($this->_meta['fields'] as $name => $field)
 		{
+			if ($field instanceof Yada_Field_Primary)
+			{
+				$this->_meta['key'] = $field;
+			}
 			if ($field instanceof Yada_Field)
 			{
 				// Initalize the field object
@@ -302,8 +300,13 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		// Focus the model and get the Field's meta data
 		$fields = $this->fields($model);
 
-		// Return NULL if field doesn't exist
-		if ( ! isset($fields[$name])) return NULL;
+		// Throw error if field doesn't exist
+		if ( ! $fields->offsetExists($name))
+		{
+			throw new Kohana_Exception('Field :name doesn\'t exist in Model :model', array(
+				':name' => $name, ':model' => Yada::common_name('model', $model)
+			));
+		}
 
 		// Get the Yada_Field Object
 		$field = $fields[$name];
@@ -333,8 +336,8 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		// Focus the model and get the Field's meta data
 		$fields = $this->fields($model);
 
-		// Return $value if field doesn't exist
-		if ( ! isset($fields[$name]))
+		// Throw error if field doesn't exist
+		if ( ! $fields->offsetExists($name))
 		{
 			throw new Kohana_Exception('Field :name doesn\'t exist in Model :model', array(
 				':name' => $name, ':model' => Yada::common_name('model', $model)
@@ -344,16 +347,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		// Get the Yada_Field Object
 		$field = $fields[$name];
 
-		// See if its a related field
-		if ($field instanceof Yada_Field_Interface_Related)
-		{
-			$this->mapper()->field($field)->add($value);
-			return $value;
-		}
-		else
-		{
-			$this->mapper()->field($field)->set($value);
-			return $value;
-		}
+		$this->mapper()->field($field)->set($value);
+		return $value;
 	}
 }

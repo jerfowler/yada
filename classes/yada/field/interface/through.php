@@ -11,5 +11,5 @@
 interface Yada_Field_Interface_Through
 {
 	public function through();
-	public function link(Yada_Field_Foreign $through);
+	public function link(Yada_Field_Key $through);
 }

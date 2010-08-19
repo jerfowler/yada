@@ -12,7 +12,7 @@ abstract class Yada_Field_Core
 {
 	/**
 	 *
-	 * @var <type>
+	 * @var ArrayObject
 	 */
 	protected $_props;
 
@@ -65,6 +65,16 @@ abstract class Yada_Field_Core
 	public function __set($name, $value)
 	{
 		$this->_props[$name] = $value;
+	}
+
+	public function __isset($name)
+	{
+		$this->_props->offsetExists($name);
+	}
+
+	public function __unset($name)
+	{
+		$this->_props->offsetUnset($name);
 	}
 
 	/**

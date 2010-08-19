@@ -21,7 +21,16 @@ abstract class Yada_Field_Data_Core extends Yada_Field implements Yada_Field_Int
 	public function initialize(Yada_Meta $meta, Yada_Model $model, $name, $alias)
 	{
 		parent::initialize($meta, $model, $name, $alias);
-		$this->column = isset($this->column) ? $alias.'.'.$this->column : $alias.'.'.$this->name;
+	}
+
+	public function alias()
+	{
+		return $this->alias.'_'.$this->name;
+	}
+
+	public function column()
+	{
+		return $this->_props->offsetExists('column') ? $this->alias.'.'.$this->column : $this->alias.'.'.$this->name;
 	}
 
 	/**

@@ -15,28 +15,33 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 {
 
         /**
-	 *
+	 * The meta object
          * @var Yada_Meta
          */
 	protected $_meta;
 
 	/**
-	 *
+	 * Our Model object
 	 * @var Yada_Model
 	 */
 	protected $_model;
 
 	/**
-	 *
-	 * @var ArrayObject
-	 */
-	protected $_stage;
-
-	/**
-	 *
+	 * The current focused field
 	 * @var ArrayObject
 	 */
 	protected $_field;
+
+	/**
+	 * The state of the mapper, values:
+	 *   new      = No values or clauses set
+	 *   changed  = New values/clauses have been set
+	 *   loaded   = A Collection has been loaded
+	 *   saved    = Values have been saved
+	 *   error    = There was an error
+	 * @var string
+	 */
+	protected $_state;
 
 	/**
 	 *
@@ -46,31 +51,79 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 */
 	public function __construct(Yada_Meta $meta, Yada_Model $model, $values = NULL)
 	{
+		// Store the meta and model objects for reference
 		$this->_meta = $meta;
 		$this->_model = $model;
-		$this->_stage = new ArrayObject(array(
-			'values' => new ArrayObject(array()),
-			'clause' => new ArrayObject(array()),
-			), ArrayObject::ARRAY_AS_PROPS);
+
+		$values = (isset($values)) ? $values : array();
+		if (empty ($values))
+		{
+		    $this->_state = 'new';
+		}
+		else
+		{
+		    $this->_state = 'changed';
+		}
+
+		// Create some new meta properties to store mapper data..
+		$meta->values = new ArrayObject($values, ArrayObject::ARRAY_AS_PROPS);
+		$meta->related = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
+		$meta->clauses = new ArrayObject(array());
+
+		// Register with the model
 		$this->export($model);
 	}
 
 	/**
-	 *
-	 * @param <type> $name
-	 * @return <type>
+	 * Sets the field instance
+	 * @param string $name
+	 * @return mixed
 	 */
-	public function __get($name) {
+	public function __get($name)
+	{
 		return $this->field($name);
 	}
 
 	/**
-	 *
-	 * @param <type> $name
-	 * @param <type> $value
+	 * Sets the field instance and its value
+	 * @param string $name
+	 * @param mixed $value
 	 */
-	public function __set($name, $value) {
+	public function __set($name, $value)
+	{
 		$this->field($name)->set($value);
+	}
+
+	/**
+	 * Magic function that adds a clause
+	 *
+	 * @param string $name The operator of the clause
+	 * @param mixed $arguments
+	 */
+	public function __call($name, $arguments)
+	{
+		if (count($arguments) == 0)
+		{
+			$value = NULL;
+		}
+		elseif (count($arguments) == 1)
+		{
+			list($value) = $arguments;
+		}
+		else
+		{
+			$value = $arguments;
+		}
+
+		if ($this->_field instanceof Yada_Field_Interface_Related)
+		{
+			return $this->related($name, $value);
+		}
+
+		$clause = array($this->_field, $name, $value);
+		$this->_clauses()->append($clause);
+		$this->_state = 'changed';
+		return $this;
 	}
 
 	/**
@@ -86,44 +139,77 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	abstract protected function _save();
 
 	/**
-	 *
-	 * @return <type>
+	 * Yada_Interface_Module interface method
+	 * @param Yada_Interface_Aggregate $object
+	 */
+	public function export(Yada_Interface_Aggregate $object)
+	{
+		$exported = isset($this::$_exported) ? $this::$_exported : array();
+		$object->register($this, $exported);
+	}
+
+	/**
+	 * Get the meta data object
+	 * @return ArrayObject
 	 */
 	protected function _meta()
 	{
-		$this->_meta->model($this->_model);
-		return $this->_meta->meta();
+		return $this->_meta->meta($this->_model);
 	}
 
 	/**
-	 *
-	 * @return <type>
+	 * Get the fields object
+	 * @return ArrayObject
 	 */
 	protected function _fields()
 	{
-		$this->_meta->model($this->_model);
-		return $this->_meta->fields();
+		return $this->_meta->fields($this->_model);
 	}
 
 	/**
-	 *
-	 * @param <type> $name
-	 * @return <type>
+	 * Get the field object
+	 * @param string $name
+	 * @return Yada_Field
 	 */
 	protected function _field($name)
 	{
-		$fields = $this->_fields();
-		return $fields[$name];
+		return $this->_meta->fields($this->_model)->$name;
 	}
 
 	/**
 	 *
-	 * @param <type> $collect
+	 * @return ArrayObject
 	 */
-	protected function _collect($collect = NULL)
+	protected function _clauses()
 	{
-		$meta = $this->_meta();
-		$meta['collect'] = $collect;
+		return $this->_meta->clauses($this->_model);;
+	}
+
+	/**
+	 *
+	 * @return ArrayObject
+	 */
+	protected function _values()
+	{
+		return $this->_meta->values($this->_model);;
+	}
+
+	/**
+	 *
+	 * @return ArrayObject
+	 */
+	protected function _related()
+	{
+		return $this->_meta->related($this->_model);
+	}
+
+	/**
+	 *
+	 * @return ArrayObject
+	 */
+	protected function _collect()
+	{
+		return $this->_meta->collect($this->_model);
 	}
 
 	/**
@@ -134,47 +220,24 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	protected function _reset(ArrayObject $field = NULL)
 	{
 		$this->_collect(NULL);
-		$stage = $this->stage($field);
-		$stage->exchangeArray(array());
+		if (isset($field))
+		{
+			if ($this->_values()->offsetExists($field->name))
+			{
+				$this->_values()->offsetUnset($field->name);
+				$count = $this->_values()->count() + $this->_clauses()->count();
+				$this->_state = ($count > 0 ) ? 'changed' : 'new';
+			}
+		}
+		else
+		{
+			$this->_state = 'new';
+			$this->_values()->exchangeArray(array());
+			$this->_clauses()->exchangeArray(array());
+		}
 		return $this;
 	}
 
-	/**
-	 *
-	 * @param Yada_Interface_Aggregate $object
-	 */
-	public function export(Yada_Interface_Aggregate $object)
-	{
-		$exported = isset($this::$_exported) ? $this::$_exported : array();
-		$object->register($this, $exported);
-	}
-
-	/**
-	 *
-	 * @return <type>
-	 */
-	public function clause()
-	{
-		return $this->_stage->clause;
-	}
-
-	/**
-	 *
-	 * @return <type>
-	 */
-	public function values()
-	{
-		return $this->_stage->values;
-	}
-
-	/**
-	 *
-	 * @return <type>
-	 */
-	public function stage()
-	{
-		return $this->_stage;
-	}
 
 	/**
 	 *
@@ -197,6 +260,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 			}
 		}
 		$this->_load($limit, $offset);
+		$this->_state = 'loaded';
 		return $model;
 	}
 
@@ -209,12 +273,13 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	public function save(Yada_Model $model, array $args)
 	{
 		$this->_save();
+		$this->_state = 'saved';
 		return $model;
 	}
 
 	/**
 	 *
-	 * @return <type>
+	 * @return Yada_Mapper
 	 */
 	public function reset()
 	{
@@ -227,69 +292,94 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 
 	/**
 	 *
-	 * @param <type> $field
-	 * @return Yada_Mapper_Core
+	 * @param string|Yada_Field $field
+	 * @return Yada_Mapper
 	 */
 	public function field($field)
 	{
-		$this->_field = (is_string($field)) ? $this->_field($field) : $field;
+		$this->_field = (is_string($field)) 
+			? $this->_field($field)
+			: $field;
 		return $this;
 	}
 
 	/**
 	 *
-	 * @param <type> $value
-	 * @return Yada_Mapper_Core
+	 * @param mixed $value
+	 * @return Yada_Mapper
 	 */
 	public function set($value)
 	{
-		$values = $this->values();
-		$values[$this->_field['name']] = array($this->_field, $value);
+		if (method_exists($this->_field, 'set'))
+		{
+			$value = $this->_field->set($value);
+		}
+
+		if ($this->_field instanceof Yada_Field_Interface_Related)
+		{
+			return $this->related('add', $value);
+		}
+		else
+		{
+			$values = $this->_values();
+			$name = $this->_field->name;
+			$values[$name] = $value;
+		}
+		$this->_state = 'changed';
 		return $this;
 	}
 
 	/**
 	 *
-	 * @param <type> $value
-	 * @return Yada_Mapper_Core
+	 * @return mixed
 	 */
-	public function equal($value)
+	public function get()
 	{
-		$this->clause()->append(array('=', array($this->_field, $value)));
+		if (method_exists($this->_field, 'get'))
+		{
+			$value = $this->_field->get($value);
+		}
+		$values = $this->_values();
+		$name = $this->_field->name;
+
+		if ($values->offsetExists($name))
+		{
+			return $values[$name];
+		}
+		else
+		{
+			return $this->_field->default;
+		}
+	}
+
+	public function values(Array $values)
+	{
+		foreach($values as $name => $value)
+		{
+			$this->field($name)->set($value);
+		}
 		return $this;
 	}
 
-	/**
-	 *
-	 * @param <type> $value
-	 * @return Yada_Mapper_Core
-	 */
-	public function like($value)
+	public function related($action, $value)
 	{
-		$this->clause()->append(array('like', array($this->_field, $value)));
-		return $this;
-	}
-
-	/**
-	 *
-	 * @param array $values
-	 * @return Yada_Mapper_Core
-	 */
-	public function in($values)
-	{
-		$values = (is_array($values)) ? $values : func_get_args();
-		$this->clause()->append(array('in', array($this->_field, $values)));
-		return $this;
-	}
-
-	/**
-	 *
-	 * @param <type> $operator
-	 * @return Yada_Mapper_Core
-	 */
-	public function op($operator)
-	{
-		$this->clause()->append(array($operator, $this->_field));
+		$related = $this->_related();
+		$name = $this->_field->name;
+		if ( ! $this->_field instanceof Yada_Field_Interface_Related)
+		{
+			throw new Kohana_Exception('Field :name in Model :model isn\'t a Related Field', array(
+				':name' => $name,
+				':model' => Yada::common_name('model', $this->_model)));
+		}
+		if ( ! $related->offsetExists($action))
+		{
+			$related[$action] = array($name => $value);
+		}
+		else
+		{
+			$related[$action][$name] = $value;
+		}
+		$this->_state = 'changed';
 		return $this;
 	}
 

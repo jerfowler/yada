@@ -19,6 +19,17 @@ abstract class Yada_Field_Expression_Core extends Yada_Field implements Yada_Fie
 		}
 	}
 
+
+	public function alias()
+	{
+		return $this->alias.'_'.$this->name;
+	}
+
+	public function expression()
+	{
+		return $this->expression;
+	}
+
 	public function set($value)
 	{
 		return $this->expression = $value;
