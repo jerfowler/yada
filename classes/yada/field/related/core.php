@@ -22,6 +22,34 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 		}
 	}
 
+	public function column()
+	{
+		if ( ! $this->key instanceof Yada_Field_Primary)
+		{
+			$fields = $this->meta->fields($this->model);
+			foreach($fields as $field)
+			{
+				if ($field instanceof Yada_Field_Primary)
+				{
+					$this->key = $field;
+					break;
+				}
+			}
+		}
+		return $this->key->column();
+	}
+
+	public function table()
+	{
+		$meta = $this->meta->meta($this->model);
+		return array($meta->table, $meta->alias);
+	}
+
+	public function fields()
+	{
+		return $this->meta->fields($this->model);
+	}
+
 	/**
 	 *
 	 * @return Yada_Model
@@ -53,11 +81,12 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 
 			// Get the Yada Field Object that points back to this model
 			$field = $meta->fields->$field;
-			//$field->mapper = $meta->mapper;
+			$field->mapper = $meta->mapper;
 
 			// Join the fields with the mappers....
-			$this->mapper->field($this)->related('join', $field);
-			//$field->mapper->field($field)->related($this);
+			$this->mapper->field($this->model, $this)->join('LEFT OUTER');
+			$field->mapper->field($field->model, $field)->join('INNER');
+			$field->mapper->exclude($this->model, $this->meta->fields($this->model));
 
 			// Set that field's related to point back to this field
 			$field->related = $this;

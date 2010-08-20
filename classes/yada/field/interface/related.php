@@ -11,4 +11,7 @@
 interface Yada_Field_Interface_Related
 {
 	public function related();
+	public function column();
+	public function table();
+	public function fields();
 }

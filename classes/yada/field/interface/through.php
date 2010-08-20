@@ -8,7 +8,7 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
-interface Yada_Field_Interface_Through
+interface Yada_Field_Interface_Through extends Yada_Field_Interface_Related
 {
 	public function through();
 	public function link(Yada_Field_Key $through);

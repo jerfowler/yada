@@ -75,9 +75,21 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	 */
 	public function __call($name, $arguments)
 	{
+		if (count($arguments) == 0)
+		{
+			$value = NULL;
+		}
+		elseif (count($arguments) == 1)
+		{
+			list($value) = $arguments;
+		}
+		else
+		{
+			$value = $arguments;
+		}
 		if(isset($this->_methods[$name]))
 		{
-			return $this->_methods[$name]->{$name}($this, $arguments);
+			return $this->_methods[$name]->{$name}($this, $value);
 		}
 	}
 

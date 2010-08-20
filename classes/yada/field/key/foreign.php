@@ -27,6 +27,18 @@ abstract class Yada_Field_Key_Foreign extends Yada_Field_Key implements Yada_Fie
 		return $this->_props->offsetExists('column') ? $this->alias.'.'.$this->column : $this->alias.'.'.$this->name.'_id';
 	}
 
+	public function table()
+	{
+		$meta = $this->meta->meta($this->model);
+		return array($meta->table, $meta->alias);
+	}
+
+	public function fields()
+	{
+		return $this->meta->fields($this->model);
+	}
+
+
 	public function related()
 	{
 		if ( ! $this->related instanceof Yada_Field_Interface_Related)
@@ -54,11 +66,12 @@ abstract class Yada_Field_Key_Foreign extends Yada_Field_Key implements Yada_Fie
 
 			// Get the Yada Field Object that points back to this model
 			$field = $meta->fields->$field;
-			//$field->mapper = $meta->mapper;
+			$field->mapper = $meta->mapper;
 
 			// Join the fields with the mappers....
-			$this->mapper->field($this)->related('join', $field);
-			//$field->mapper->field($field)->related($this);
+			$this->mapper->field($this->model, $this)->join('INNER');
+			$field->mapper->field($field->model, $field)->join('INNER');
+			$field->mapper->exclude($this->model, $this->meta->fields($this->model));
 
 			// Set that field's related to point back to this field
 			$field->related = $this;

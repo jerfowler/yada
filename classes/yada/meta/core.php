@@ -218,7 +218,6 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 			'alias'   => $this->_models->count().'_'.$plural,
 			// Field Information is also stored in ArrayObjects
 			'fields'  => array(),
-			'key'	  => NULL,
 			// related models
 			'parent'  => $this->_current,
 			'children' => new SplObjectStorage(),
@@ -273,10 +272,6 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		$this->_meta['fields'] = new ArrayObject($this->_meta['fields'], ArrayObject::ARRAY_AS_PROPS);
 		foreach ($this->_meta['fields'] as $name => $field)
 		{
-			if ($field instanceof Yada_Field_Primary)
-			{
-				$this->_meta['key'] = $field;
-			}
 			if ($field instanceof Yada_Field)
 			{
 				// Initalize the field object
@@ -320,7 +315,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 
 		// pass the field object to the mapper object, which
 		// focuses the field and returns the mapper object instance
-		return $this->mapper()->field($field);
+		return $this->mapper()->field($model, $field);
 	}
 
 	/**
@@ -347,7 +342,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		// Get the Yada_Field Object
 		$field = $fields[$name];
 
-		$this->mapper()->field($field)->set($value);
+		$this->mapper()->field($model, $field)->set($value);
 		return $value;
 	}
 }

@@ -69,6 +69,8 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 		$meta->values = new ArrayObject($values, ArrayObject::ARRAY_AS_PROPS);
 		$meta->related = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
 		$meta->clauses = new ArrayObject(array());
+		$meta->select = new ArrayObject(array());
+		$meta->exclude = new SplObjectStorage;
 
 		// Register with the model
 		$this->export($model);
@@ -81,7 +83,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 */
 	public function __get($name)
 	{
-		return $this->field($name);
+		return $this->field($this->_model, $name);
 	}
 
 	/**
@@ -91,7 +93,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 */
 	public function __set($name, $value)
 	{
-		$this->field($name)->set($value);
+		$this->field($this->_model, $name)->set($value);
 	}
 
 	/**
@@ -152,18 +154,20 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * Get the meta data object
 	 * @return ArrayObject
 	 */
-	protected function _meta()
+	protected function _meta($model = NULL)
 	{
-		return $this->_meta->meta($this->_model);
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->meta($model);
 	}
 
 	/**
 	 * Get the fields object
 	 * @return ArrayObject
 	 */
-	protected function _fields()
+	protected function _fields($model = NULL)
 	{
-		return $this->_meta->fields($this->_model);
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->fields($model);
 	}
 
 	/**
@@ -171,45 +175,70 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * @param string $name
 	 * @return Yada_Field
 	 */
-	protected function _field($name)
+	protected function _field($name, $model = NULL)
 	{
-		return $this->_meta->fields($this->_model)->$name;
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->fields($model)->$name;
 	}
 
 	/**
 	 *
 	 * @return ArrayObject
 	 */
-	protected function _clauses()
+	protected function _select($model = NULL)
 	{
-		return $this->_meta->clauses($this->_model);;
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->select($model);;
+	}
+
+	/**
+	 *
+	 * @return SplObjectStorage;
+	 */
+	protected function _exclude($model = NULL)
+	{
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->exclude($model);;
 	}
 
 	/**
 	 *
 	 * @return ArrayObject
 	 */
-	protected function _values()
+	protected function _clauses($model = NULL)
 	{
-		return $this->_meta->values($this->_model);;
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->clauses($model);;
 	}
 
 	/**
 	 *
 	 * @return ArrayObject
 	 */
-	protected function _related()
+	protected function _values($model = NULL)
 	{
-		return $this->_meta->related($this->_model);
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->values($model);;
 	}
 
 	/**
 	 *
 	 * @return ArrayObject
 	 */
-	protected function _collect()
+	protected function _related($model = NULL)
 	{
-		return $this->_meta->collect($this->_model);
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->related($model);
+	}
+
+	/**
+	 *
+	 * @return ArrayObject
+	 */
+	protected function _collect($model = NULL)
+	{
+		$model = isset($model) ? $model : $this->_model;
+		return $this->_meta->collect($model);
 	}
 
 	/**
@@ -245,22 +274,36 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * @param array $args
 	 * @return Yada_Model
 	 */
-	public function load(Yada_Model $model, array $args)
+	public function load($model = NULL, $args = NULL)
 	{
 		$offset = $limit = NULL;
-		if ( ! empty ($args)) 
+
+		if ($model instanceof Yada_Model)
 		{
-			if (count($args) == 2)
+			if (is_array($args))
 			{
 				list($limit, $offset) = $args;
 			}
 			else
 			{
-				list($limit) = $args;
+				$limit = $args;
 			}
 		}
-		$this->_load($limit, $offset);
-		$this->_state = 'loaded';
+		else
+		{
+			$limit = $model;
+			$offset = $args;
+			$model = $this->_model;
+		}
+
+		if ($this->_load($limit, $offset))
+		{
+			$this->_state = 'loaded';
+		}
+		else
+		{
+			$this->_state = 'error';
+		}
 		return $model;
 	}
 
@@ -270,24 +313,35 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * @param array $args
 	 * @return Yada_Model
 	 */
-	public function save(Yada_Model $model, array $args)
+	public function save($model = NULL, $field = NULL)
 	{
-		$this->_save();
-		$this->_state = 'saved';
-		return $model;
+		if ($this->_save())
+		{
+			$this->_state = 'saved';
+		}
+		else
+		{
+			$this->_state = 'error';
+		}
+
+		return $this->_model;
 	}
 
 	/**
 	 *
 	 * @return Yada_Mapper
 	 */
-	public function reset()
+	public function reset($model = NULL, $field = NULL)
 	{
-		if (func_num_args() > 0)
+	    	if ($model instanceof Yada_Model)
 		{
-			return $this->_reset();
+			return $this->_reset($field);
 		}
-		return $this->_reset($this->_field);
+		else
+		{
+			$field = (is_null($model)) ? $this->_field : $this->_field($model);
+			return $this->_reset($field);
+		}
 	}
 
 	/**
@@ -295,11 +349,85 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * @param string|Yada_Field $field
 	 * @return Yada_Mapper
 	 */
-	public function field($field)
+	public function field($model = NULL, $field = NULL)
 	{
-		$this->_field = (is_string($field)) 
-			? $this->_field($field)
-			: $field;
+	    	if ( ! $model instanceof Yada_Model)
+		{
+			$field = $model;
+		}
+
+		$this->_field = (is_string($field))
+				? $this->_field($field)
+				: $field;
+
+		return $this;
+	}
+
+	public function values($model = NULL, $values = NULL)
+	{
+	    	if ( ! $model instanceof Yada_Model)
+		{
+			$values = $model;
+			$model = $this->_model;
+		}
+
+		foreach($values as $name => $value)
+		{
+			$this->field($model, $name)->set($value);
+		}
+		return $this;
+	}
+
+	public function select($model = NULL, $fields = NULL)
+	{
+	    	if ( ! $model instanceof Yada_Model)
+		{
+			$fields = $model;
+		}
+
+		$select = $this->_select();
+		if (empty ($fields))
+		{
+			$select->exchangeArray(array());
+		}
+		else
+		{
+			if ($fields instanceof ArrayObject)
+			{
+				$fields = array_keys($fields->getArrayCopy());
+			}
+			$select->exchangeArray((array)$fields);
+		}
+		return $this;
+	}
+
+	public function exclude($model = NULL, $fields = NULL)
+	{
+	    	if ( ! $model instanceof Yada_Model)
+		{
+			$fields = $model;
+			$model = $this->_model;
+		}
+
+		$exclude = $this->_exclude();
+		if ( is_null($fields))
+		{
+			$fields = array();
+		}
+		elseif ($fields instanceof ArrayObject)
+		{
+			$fields = array_keys($fields->getArrayCopy());
+		}
+		else
+		{
+			$fields = is_array($fields) ? $fields : array($fields);
+		}
+		
+		var_dump('***Exclude***');
+		var_dump($fields);
+
+		$fields = new ArrayObject(array_combine($fields, $fields));
+		$exclude[$model] = $fields;
 		return $this;
 	}
 
@@ -352,18 +480,13 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 		}
 	}
 
-	public function values(Array $values)
-	{
-		foreach($values as $name => $value)
-		{
-			$this->field($name)->set($value);
-		}
-		return $this;
-	}
-
 	public function related($action, $value)
 	{
 		$related = $this->_related();
+
+		ini_set('xdebug.var_display_max_depth', 2 );
+		var_dump('Related: '.$action);
+		var_dump($this);
 		$name = $this->_field->name;
 		if ( ! $this->_field instanceof Yada_Field_Interface_Related)
 		{
