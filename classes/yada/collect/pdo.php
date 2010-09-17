@@ -8,7 +8,7 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
  
-abstract class Yada_Collect_Kohana_Core extends Yada_Collect
+class Yada_Collect_PDO extends Yada_Collect_PDO_Core
 {
 
 }

@@ -12,58 +12,62 @@ abstract class Yada_Collect_Core
 implements Yada_Interface_Module, Countable, SeekableIterator, ArrayAccess
 {
 	protected $_model;
-	protected $_current = 'selected';
-	protected $_key = 0;
-	protected $_data = array();
+	protected $_meta;
+	protected $_data;
 
-	protected $_exported = array();
+//	protected $_current = 'selected';
+//	protected $_key = 0;
+//	protected $_exported = array();
 
-	public function __construct($object, ArrayAccess $data)
+	public function __construct(Yada_Meta $meta, Yada_Model $model, $data)
 	{
-		$this->_data['selected'] = $data;
-		$this->_data['inserted'] = new ArrayObject(array());
-		$this->_data['updated'] = new ArrayObject(array());
-		$this->_data['deleted'] = new ArrayObject(array());
-		$this->export($object);
-	}
+		$this->_meta = $meta;
+		$this->_model = $model;
+		$this->_data = $data;
 
-	public function __set($name, $value)
-	{
-		if ($this->_current == 'inserted')
-		{
-			$this->_data[$this->_current][$this->_key][$name] = $value;
-		}
-		else
-		{
-			if ( ! isset($this->_data['updated'][$this->_key]))
-			{
-				$this->_data['updated'][$this->_key] = new Yada_Record(array(), $this->_model);
-			}
-			$this->_data['updated'][$this->_key][$name] = $value;
-		}
+//		$this->_data['selected'] = $data;
+//		$this->_data['inserted'] = new ArrayObject(array());
+//		$this->_data['updated'] = new ArrayObject(array());
+//		$this->_data['deleted'] = new ArrayObject(array());
+		$this->export($model);
 	}
-
-	public function __get($name)
-	{
-		if ($this->_current == 'selected' AND isset($this->_data['updated'][$this->_key]))
-		{
-			if ($this->_data['updated'][$this->_key]->offsetExists($name))
-			{
-				return $this->_data['updated'][$this->_key][$name];
-			}
-		}
-		if (isset($this->_data[$this->_current][$this->_key][$name]))
-		{
-			return $this->_data[$this->_current][$this->_key][$name];
-		}
-		else return NULL;
-	}
+//
+//	public function __set($name, $value)
+//	{
+//		if ($this->_current == 'inserted')
+//		{
+//			$this->_data[$this->_current][$this->_key][$name] = $value;
+//		}
+//		else
+//		{
+//			if ( ! isset($this->_data['updated'][$this->_key]))
+//			{
+//				$this->_data['updated'][$this->_key] = new Yada_Record(array(), $this->_model);
+//			}
+//			$this->_data['updated'][$this->_key][$name] = $value;
+//		}
+//	}
+//
+//	public function __get($name)
+//	{
+//		if ($this->_current == 'selected' AND isset($this->_data['updated'][$this->_key]))
+//		{
+//			if ($this->_data['updated'][$this->_key]->offsetExists($name))
+//			{
+//				return $this->_data['updated'][$this->_key][$name];
+//			}
+//		}
+//		if (isset($this->_data[$this->_current][$this->_key][$name]))
+//		{
+//			return $this->_data[$this->_current][$this->_key][$name];
+//		}
+//		else return NULL;
+//	}
 
 	public function export(Yada_Interface_Aggregate $object)
 	{
-		$this->_model = $object;
-	  	$this->_exported += array('as_array', 'add', 'delete');
-		$object->register($this, $this->_exported, '_Collection');
+		$exported = isset($this::$_exported) ? $this::$_exported : array();
+		$object->register($this, $exported);
 	}
 
 	public function as_array()

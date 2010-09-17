@@ -9,7 +9,7 @@
  *
  *
  */
-abstract class Yada_Record_Kohana_Core extends Yada_Record
+abstract class Yada_Record_PDO_Core extends Yada_Record
 {
 
 }

@@ -137,7 +137,7 @@ abstract class Yada_Core
 	 */
 	public static function mapper($meta, $model)
 	{
-		$mapper = isset($model::$mapper) ? $model::$mapper : 'kohana';
+		$mapper = isset($model::$mapper) ? $model::$mapper : 'SQL_PDO';
 		$class = Yada::class_name('mapper', $mapper);
 		return new $class($meta, $model);
 	}
@@ -155,7 +155,7 @@ abstract class Yada_Core
 	 */
 	public static function collect($meta, $model, $data)
 	{
-		$collect = isset($model::$collect) ? $model::$collect : 'kohana';
+		$collect = isset($model::$collect) ? $model::$collect : 'SQL_PDO';
 		$class = Yada::class_name('collect', $collect);
 		return new $class($meta, $model, $data);
 	}
@@ -174,7 +174,7 @@ abstract class Yada_Core
 	 */
 	public static function record($meta, $model, $data)
 	{
-		$record = isset($model::$record) ? $model::$record : 'kohana';
+		$record = isset($model::$record) ? $model::$record : 'SQL_PDO';
 		$class = Yada::class_name('record', $record);
 		return new $class($meta, $model, $data);
 	}

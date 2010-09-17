@@ -75,6 +75,13 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	 */
 	public function __call($name, $arguments)
 	{
+		// If there exists a module with a type called $name
+		if (isset($this->_modules[$name]))
+		{
+			// Return the module instance by it's type name
+			return $this->_modules[$name];
+		}
+
 		if (count($arguments) == 0)
 		{
 			$value = NULL;
@@ -87,6 +94,7 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 		{
 			$value = $arguments;
 		}
+
 		if(isset($this->_methods[$name]))
 		{
 			return $this->_methods[$name]->{$name}($this, $value);
@@ -94,29 +102,20 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	}
 
 	/**
-	 * Magic Method used to get the aggregated dynamic properties
 	 * @param string $name
 	 * @return mixed
 	 */
 	public function __get($name)
 	{
-		// If there exists a module with a type called $name
-		if (isset($this->_modules[$name]))
+		// If attached to a meta object, get the field
+		if (isset($this->_modules['meta']))
 		{
-			// Return the module instance by it's type name
-			return $this->_modules[$name];
+			return $this->_modules['meta']->get_field($this, $name);
 		}
-		// check to see if a module has implemented a get_field method
-		elseif (isset($this->_methods['get_field']))
-		{
-			// Return the result of the get_field property from the dynamic method
-			return $this->_methods['get_field']->get_field($this, $name);
-		}
-		// Default to the Meta Object get_field method
+		// Default to the _init var
 		else
 		{
-			// Return the result of the Meta Object's get_field method
-			return $this->_modules['meta']->get_field($this, $name);
+			return isset($this->_init[$name]) ? $this->_init[$name] : NULL;
 		}
 	}
 
@@ -127,15 +126,15 @@ abstract class Yada_Model_Core implements Yada_Interface_Aggregate //, Iterator,
 	 */
 	public function __set($name, $value)
 	{
-		// Check to see if a module has implemented a set_field method
-		if (isset($this->_methods['set_field']))
-		{
-			$this->_methods['set_field']->set_field($this, $name, $value);
-		}
-		// Default to the Meta Object get_field method
-		else
+		// If attached to a meta object, set the field
+		if (isset($this->_modules['meta']))
 		{
 			$this->_modules['meta']->set_field($this, $name, $value);
+		}
+		// Default to the _init var
+		else
+		{
+			$this->_init[$name] = $value;
 		}
 	}
 

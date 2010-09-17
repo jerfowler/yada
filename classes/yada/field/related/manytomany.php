@@ -13,14 +13,60 @@
 
 abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implements Yada_Field_Interface_Through
 {
+
+	public function _init_dynamic(Yada_Model $model, $field)
+	{
+		if ( ! isset($model->_init['fields']))
+		{
+			$model->_init['fields'] = array();
+		}
+
+		if ( ! isset($model->_init['fields'][$field]))
+		{
+			$through = Yada::field('Foreign');
+			$this->through = $through;
+			$through->related = $this;
+			$model->_init['fields'][$field] = $through;
+		}
+
+		$related = $this->related;
+		if (is_array($related->through))
+		{
+			list($m, $field) = $related->through;
+		}
+		else
+		{
+			$field = $this->name;
+		}
+
+		if ( ! isset($model->_init['fields'][$field]))
+		{
+			$link = Yada::field('Foreign');
+			$link->related = $related;
+			$link->through = $through;
+			$through->through = $link;
+			$model->_init['fields'][$field] = $link;
+
+		}
+
+		if ( ! isset($model->_init['table']))
+		{
+			$table = array();
+			$meta = $this->meta->meta($this->model);
+			$table[] = $meta->offsetExists('table') ? $meta->table : $meta->plural;
+			$meta = $this->meta->meta($related->model);
+			$table[] = $meta->offsetExists('table') ? $meta->table : $meta->plural;
+			sort($table);
+			$model->_init['table'] = implode('_', $table);
+		}
+	}
+
 	public function initialize(Yada_Meta $meta, Yada_Model $model, $name, $alias)
 	{
 		parent::initialize($meta, $model, $name, $alias);
 		if (! $this->through)
 		{
-			throw new Kohana_Exception(
-				'No through option specified for many-to-many field :field in model :model',
-				array(':field' => $column, ':model' => Yada::common_name('model', $model)));
+			$this->through = 'Dynamic';
 		}
 	}
 
@@ -38,10 +84,9 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 			// Get the through field to the through model
 			// Set the through field's related to this
 			$through = $this->through();
-
+			
 			// Link the models back the other direction
 			$related->link($through);
-
 		}
 		return $this->related;
 	}
@@ -94,42 +139,51 @@ abstract class Yada_Field_Related_ManyToMany extends Yada_Field_Related implemen
 	 */
 	public function through()
 	{
-
+		var_dump('ManytoMany Through');
 		if ( ! $this->through instanceof Yada_Field_Foreign)
 		{
-			if (is_array($this->through) AND count($this->through) == 2)
+			$init = NULL;
+			if (is_array($this->through))
 			{
 				list($model, $field) = $this->through;
+				if (is_array($model))
+				{
+					list($model, $init) = $model;
+				}				
 			}
 			elseif (is_string($this->through))
 			{
 				$model = $this->through;
-				$field = $this->name;
+				$field = $this->related->name;
 			}
 			else
 			{
-				throw new Kohana_Exception('Invalid through value for Field :field in Model :model', array(
-					':field' => $this->name, ':model' => Yada::common_name('model', $this->model)
-				));
+				throw new Kohana_Exception(
+					'No through option specified for many-to-many field :field in model :model',
+					array(':field' => $column, ':model' => Yada::common_name('model', $model)));
 			}
 
-			if (is_array($model) AND count($model) == 2)
+			$model = Yada::model($model, $init);
+			$dynamic = Yada::class_name('model', 'Dynamic');
+			if ($model instanceof $dynamic)
 			{
-				list($model, $init) = $model;
-				$model = Yada::model($model, $init);
+				$this->_init_dynamic($model, $field);
+				$this->meta->attach($model);
 			}
+			else
+			{
+				// Focus the through model and get the meta data
+				$meta = $this->meta->meta($model);
 
-			// Focus the through model and get the meta data
-			$meta = $this->meta->meta($model);
+				// Get the Yada Field Object that points back to this model
+				$field = $meta->fields->$field;
 
-			// Get the Yada Field Object that points back to this model
-			$field = $meta->fields->$field;
+				// Set that field's properties to point back to this model/field
+				$field->related = $this;
 
-			// Set that field's properties to point back to this model/field
-			$field->related = $this;
-
-			// Save the reference to that field
-			$this->through = $field;
+				// Save the reference to that field
+				$this->through = $field;
+			}
 
 		}
 		// Focus the through model

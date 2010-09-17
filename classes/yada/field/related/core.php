@@ -42,7 +42,9 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 	public function table()
 	{
 		$meta = $this->meta->meta($this->model);
-		return array($meta->table, $meta->alias);
+		return $meta->offsetExists('table')
+			? array($meta->table, $meta->alias)
+			: array($meta->plural, $meta->alias);
 	}
 
 	public function fields()
@@ -74,7 +76,7 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 			}
 
 			// Get the mapper and save it
-			$this->mapper = $this->meta->mapper();
+			$this->mapper = $this->meta->mapper($this->model);
 
 			// Get the meta data of the related model
 			$meta = $this->meta->meta($this->related);
@@ -82,11 +84,6 @@ abstract class Yada_Field_Related_Core extends Yada_Field implements Yada_Field_
 			// Get the Yada Field Object that points back to this model
 			$field = $meta->fields->$field;
 			$field->mapper = $meta->mapper;
-
-			// Join the fields with the mappers....
-			$this->mapper->field($this->model, $this)->join('LEFT OUTER');
-			$field->mapper->field($field->model, $field)->join('INNER');
-			$field->mapper->exclude($this->model, $this->meta->fields($this->model));
 
 			// Set that field's related to point back to this field
 			$field->related = $this;

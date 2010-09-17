@@ -30,7 +30,9 @@ abstract class Yada_Field_Key_Foreign extends Yada_Field_Key implements Yada_Fie
 	public function table()
 	{
 		$meta = $this->meta->meta($this->model);
-		return array($meta->table, $meta->alias);
+		return $meta->offsetExists('table') 
+			? array($meta->table, $meta->alias)
+			: array($meta->plural, $meta->alias);
 	}
 
 	public function fields()
@@ -59,7 +61,7 @@ abstract class Yada_Field_Key_Foreign extends Yada_Field_Key implements Yada_Fie
 			}
 
 			// Get the mapper and save it
-			$this->mapper = $this->meta->mapper();
+			$this->mapper = $this->meta->mapper($this->model);
 
 			// Focus the through model and get the meta data
 			$meta = $this->meta->meta($this->related);
@@ -67,11 +69,6 @@ abstract class Yada_Field_Key_Foreign extends Yada_Field_Key implements Yada_Fie
 			// Get the Yada Field Object that points back to this model
 			$field = $meta->fields->$field;
 			$field->mapper = $meta->mapper;
-
-			// Join the fields with the mappers....
-			$this->mapper->field($this->model, $this)->join('INNER');
-			$field->mapper->field($field->model, $field)->join('INNER');
-			$field->mapper->exclude($this->model, $this->meta->fields($this->model));
 
 			// Set that field's related to point back to this field
 			$field->related = $this;

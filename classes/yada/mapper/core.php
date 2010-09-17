@@ -27,6 +27,18 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	protected $_model;
 
 	/**
+	 *
+	 * @var Integer
+	 */
+	protected $_index;
+	
+	/**
+	 *
+	 * @var SplObjectStorage
+	 */
+	protected $_linked;
+
+	/**
 	 * The current focused field
 	 * @var ArrayObject
 	 */
@@ -54,23 +66,28 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 		// Store the meta and model objects for reference
 		$this->_meta = $meta;
 		$this->_model = $model;
+		$this->_index = $meta->index($model);
+		$this->_linked = new SplObjectStorage();
 
 		$values = (isset($values)) ? $values : array();
 		if (empty ($values))
 		{
-		    $this->_state = 'new';
+			$this->_state = 'new';
 		}
 		else
 		{
-		    $this->_state = 'changed';
+			$this->_state = 'changed';
 		}
 
 		// Create some new meta properties to store mapper data..
 		$meta->values = new ArrayObject($values, ArrayObject::ARRAY_AS_PROPS);
 		$meta->related = new ArrayObject(array(), ArrayObject::ARRAY_AS_PROPS);
-		$meta->clauses = new ArrayObject(array());
+		$meta->clauses = new ArrayObject($meta->clauses);
 		$meta->select = new ArrayObject(array());
-		$meta->exclude = new SplObjectStorage;
+		$exclude = new SplObjectStorage();
+		$exclude->attach($model, new ArrayObject($meta->exclude));
+		$meta->exclude = $exclude;
+
 
 		// Register with the model
 		$this->export($model);
@@ -134,6 +151,11 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 * @param <type> $offset
 	 */
 	abstract protected function _load($limit = NULL, $offset = NULL);
+
+
+	abstract protected function _link($field, $related, $reverse = FALSE);
+
+
 
 	/**
 	 *
@@ -280,6 +302,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 
 		if ($model instanceof Yada_Model)
 		{
+			$this->_meta->model($model);
 			if (is_array($args))
 			{
 				list($limit, $offset) = $args;
@@ -306,6 +329,34 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 		}
 		return $model;
 	}
+
+	public function loaded()
+	{
+		return (bool)$this->_state == 'loaded';
+	}
+
+	public function link($model = NULL, $field = NULL, $reverse = FALSE)
+	{
+		$model = isset($model) ? $model : $this->_model;
+		$this->field($model, $field);
+		if ( ! $field instanceof Yada_Field_Interface_Related)
+		{
+			throw new Kohana_Exception('Field :name in Model :model isn\'t a Related Field', array(
+				':name' => $field->name,
+				':model' => Yada::common_name('model', $model)));
+		}
+
+		$related = $field->related();
+		$linked = $this->_linked;
+		if ( ! $linked->offsetExists($field))
+		{
+			$linked->offsetSet($field, $related);
+			$this->_link($field, $related, $reverse);
+			$related->mapper->link($related->model, $related, TRUE);
+		}
+		return $related->model;
+	}
+
 
 	/**
 	 *
@@ -335,6 +386,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	{
 	    	if ($model instanceof Yada_Model)
 		{
+			$this->_meta->model($model);
 			return $this->_reset($field);
 		}
 		else
@@ -383,9 +435,10 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	    	if ( ! $model instanceof Yada_Model)
 		{
 			$fields = $model;
+			$model = $this->_model;
 		}
 
-		$select = $this->_select();
+		$select = $this->_select($model);
 		if (empty ($fields))
 		{
 			$select->exchangeArray(array());
@@ -409,7 +462,7 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 			$model = $this->_model;
 		}
 
-		$exclude = $this->_exclude();
+		$exclude = $this->_exclude($model);
 		if ( is_null($fields))
 		{
 			$fields = array();
@@ -482,18 +535,14 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 
 	public function related($action, $value)
 	{
-		$related = $this->_related();
+		var_dump('Related, model: '.Yada::common_name('model', $this->_model));
+		var_dump('Related, action: '.$action);
 
-		ini_set('xdebug.var_display_max_depth', 2 );
-		var_dump('Related: '.$action);
-		var_dump($this);
+		$related = $this->_related();
 		$name = $this->_field->name;
-		if ( ! $this->_field instanceof Yada_Field_Interface_Related)
-		{
-			throw new Kohana_Exception('Field :name in Model :model isn\'t a Related Field', array(
-				':name' => $name,
-				':model' => Yada::common_name('model', $this->_model)));
-		}
+
+		var_dump('Related, name: '.$name);
+
 		if ( ! $related->offsetExists($action))
 		{
 			$related[$action] = array($name => $value);

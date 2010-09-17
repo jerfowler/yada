@@ -208,19 +208,22 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		$class = get_class($model);
 		$name = Yada::common_name('model', $class);
 		$plural = inflector::plural($name);
+		$index = $this->_models->count();
 
 		// Create a new ArrayObject to act as the Meta Object and initialize some properties
 		$this->_meta = new ArrayObject(array(
 			'name'    => $name,
 			'class'   => $class,
-			'plural'   => $plural,
+			'plural'  => $plural,
+			'index'   => $index,
 			// Unique Table aliases are used for all queires
-			'alias'   => $this->_models->count().'_'.$plural,
+			'alias'   => $index.'_'.$name,
 			// Field Information is also stored in ArrayObjects
 			'fields'  => array(),
-			// related models
-			'parent'  => $this->_current,
-			'children' => new SplObjectStorage(),
+
+			'clauses' => array(),
+			'select'  => array(),
+			'exclude' => array(),
 			// Each Model gets its own Mapper Object
 			'mapper' => NULL,
 			// Collect Objects are referenced here
@@ -229,12 +232,6 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 
 		// Initialize objects of derived Meta classes
 		$this->_attach($this->_meta, $values);
-
-		// Register children if there is a parent object
-		if (isset($this->_current))
-		{
-			$this->children->attach($model, $this->_meta);
-		}
 
 		// Attach the model and meta data, set the focus
 		$this->_models->attach($model, $this->_meta);
@@ -310,7 +307,7 @@ abstract class Yada_Meta_Core implements Yada_Interface_Module
 		if ($field instanceof Yada_Field_Interface_Related)
 		{
 			// Return the related field's model
-			return $field->related()->model;
+			return $this->mapper()->link($model, $field);
 		}
 
 		// pass the field object to the mapper object, which
