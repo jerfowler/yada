@@ -17,7 +17,9 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 	 *
 	 * @var array
 	 */
-	protected static $_exported = array('load', 'save', 'begin', 'end', 'field', 'values', 'select', 'exclude', 'loaded', 'subquery', 'sql', 'params');
+	protected static $_exported = array(
+	    'load', 'save', 'begin', 'end', 'field', 'values', 'select',
+	    'exclude', 'loaded', 'sub', 'sql', 'params', 'count');
 
 	/**
 	 *
@@ -54,11 +56,8 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 	 */
 	protected $_filtered = array();
 
-	/**
-	 *
-	 * @var SplObjectStorage
-	 */
-	protected $_linked = NULL;
+	protected $_limited = FALSE;
+
 
 	/**
 	 *
@@ -70,6 +69,8 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 	abstract protected function _execute($query, Array $data = NULL);
 	abstract protected function _is_joinable($mapper);
 	abstract protected function _table_prefix($table);
+	abstract protected function _get_sql($query);
+	abstract protected function _fetch_column($query, $num = 0);
 
 	/**
 	 *
@@ -80,7 +81,6 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 	public function __construct(Yada_Meta $meta, Yada_Model $model, $values = NULL)
 	{
 		parent::__construct($meta, $model, $values);
-		$this->_linked = new SplObjectStorage;
 	}
 
 	protected function _init_query($name)
@@ -154,6 +154,10 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 				elseif($field instanceof Yada_Field_Interface_Expression)
 				{
 					$pointer[] = $field->expression().' AS '.$field->alias();
+					if ($field instanceof Yada_Field_Interface_Aggregate)
+					{
+						//TODO: GROUP BY
+					}
 				}
 			}
 		}
@@ -403,10 +407,7 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 		if ( ! empty($this->_queries[$query]['limit']))
 		{
 			$sql[] = $nl.'LIMIT '.$this->_queries[$query]['limit'];
-		}
-		if ( ! empty($this->_queries[$query]['offset']))
-		{
-			$sql[] = $nl.'OFFSET '.$this->_queries[$query]['offset'];
+			$sql[] = 'OFFSET '.$this->_queries[$query]['offset'];
 		}
 		return implode(' ', $sql);
 	}
@@ -421,15 +422,31 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 		var_dump('Load');
 		//$this->_params = array();
 
-		if (( ! isset($this->_queries['load'])) OR $this->_state == 'changed')
+		var_dump($this->_state);
+
+		$build = TRUE;
+		if (isset($this->_queries['load']) AND $this->_state === 'loaded')
+		{
+			$build = (isset($limit) !== $this->_limited);
+		}
+
+		var_dump($build);
+		var_dump($this->_limited);
+
+		if ($build)
 		{
 			$this->_init_query('load');
 			
-			if ( ! is_null($limit))
+			if ( ! empty($limit))
 			{
 				$offset = is_null($offset) ? 0 : $offset;
 				$this->_queries['load']['limit'] = $this->_add_param('load', $limit, 'limit');
 				$this->_queries['load']['offset'] = $this->_add_param('load', $offset, 'offset');
+				$this->_limited == TRUE;
+			}
+			else
+			{
+				$this->_limited == FALSE;
 			}
 			
 			if ( ! $this->_filtered['load']->contains($this->_model))
@@ -444,10 +461,10 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 				$this->_filtered['load']->attach($this->_model);
 
 				$related = $this->_related();
-				if (isset($related['sub']))
+				if (isset($related['subquery']))
 				{
 					var_dump('Process Related: sub');
-					foreach($related['sub'] as $values)
+					foreach($related['subquery'] as $values)
 					{
 						var_dump($values);
 						list($field, $related) = $values;
@@ -455,7 +472,7 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 						$expr = array();
 						$expr[] = $field->column();
 						$expr[] = 'IN (';
-						$expr[] = $sub->subquery($related);
+						$expr[] = $sub->sub($related);
 						$expr[] = ')';
 						$this->_queries['load']['where'][] = implode(' ', $expr);
 						$this->_params['load'] += $sub->params('sub');
@@ -463,7 +480,7 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 				}
 				else
 				{
-					$this->_process_model($this->_model);
+					$this->_process_model('load', $this->_model);
 				}
 			}
 
@@ -502,12 +519,6 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 		return TRUE;
 	}
 
-	protected function _link($field, $related, $reverse = FALSE)
-	{
-		var_dump('Link');
-		$this->_linked[$field] = array($related, $reverse);
-	}
-
 	protected function _process_joins($query)
 	{
 		var_dump('Process Joins: '. $query);
@@ -538,7 +549,7 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 				}
 				else
 				{
-					$this->sub($field, $related);
+					$this->subquery($field, $related);
 				}
 			}
 			else
@@ -573,25 +584,28 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 		}
 	}
 
-	public function sql($model = NULL, $field = NULL)
+	public function sql($model = NULL, $query = NULL)
 	{
-		if ( ! $this->_filtered['load']->contains($this->_model))
+		var_dump('SQL');
+		if ($model instanceof Yada_Model)
 		{
-//			$exclude = $this->_exclude();
-//			$exclude = $exclude->offsetExists($model)
-//				? $exclude->offsetGet($model)
-//				: new ArrayObject(array());
-			$exclude = new ArrayObject(array());
-			$this->_build_select($this->_fields($this->_model), $this->_select($this->_model), $exclude);
-			$this->_filtered['load']->attach($this->_model);
+			$query = isset($query) ? $query : 'load';
+		}
+		else
+		{
+			$query = isset($model) ? $model : 'load';
 		}
 
-		$this->_process_model($this->_model);
-		return $this->_build_select_query();
+		if (( ! isset($this->_queries[$query])) OR $this->_state == 'changed')
+		{
+			$this->$query();
+		}
+		return $this->_get_sql($this->_queries[$query]);
 	}
 
-	public function subquery($model = NULL, $field = NULL)
+	public function sub($model = NULL, $field = NULL)
 	{
+		var_dump('Sub');
 		if ($model instanceof Yada_Model)
 		{
 			$field = isset($field) ? $field : $this->_field;
@@ -613,13 +627,13 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 			$this->_queries['sub']['select'] = array($field->column());
 			$this->_process_joins('sub');
 			$related = $this->_related();
-			if (isset($related['sub']))
+			if (isset($related['subquery']))
 			{
 				foreach($related['sub'] as $values)
 				{
 					list($field, $related) = $values;
 					$sub = $related->model;
-					$expr = $field->column().' IN ('.$sub->subquery($related).')';
+					$expr = $field->column().' IN ('.$sub->sub($related).')';
 					$this->_queries['sub']['where'][] = $expr;
 					$this->_params['sub'] += $sub->params('sub');
 				}
@@ -629,12 +643,14 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 				$this->_process_model('sub', $this->_model);
 			}
 		}
-
-		return $this->_build_select_query('sub');
+		$sql =  $this->_build_select_query('sub');
+		$this->_queries['sub'] = $this->_prepare($sql);
+		return $sql;
 	}
 
 	public function params($model = NULL, $query = NULL)
 	{
+		var_dump('Params');
 		if ($model instanceof Yada_Model)
 		{
 			$query = isset($query) ? $query : 'load';
@@ -644,5 +660,35 @@ abstract class Yada_Mapper_SQL_Core extends Yada_Mapper
 			$query = isset($model) ? $model : 'load';
 		}
 		return isset($this->_params[$query]) ? $this->_params[$query] : array();
+	}
+
+	public function count($model = NULL, $query = NULL)
+	{
+		var_dump('Count');
+		if ($model instanceof Yada_Model)
+		{
+			$query = isset($query) ? $query : 'load';
+		}
+		else
+		{
+			$query = isset($model) ? $model : 'load';
+		}
+
+		$sql = $this->sql($query);
+		$sql = 'SELECT COUNT(*) AS rowCount FROM ('.$sql.') AS X';
+		$this->_queries['count'] = $this->_prepare($sql);
+
+		var_dump($sql);
+		var_dump($this->_params[$query]);
+		
+		foreach ($this->_params[$query] as $key => $value)
+		{
+			$this->_bind_value($this->_queries['count'], $key, $value);
+		}
+
+		$this->_execute($this->_queries['count']);
+		$count = $this->_fetch_column($this->_queries['count'], 0);
+		var_dump($count);
+		return isset($count) ? (int) $count : 0;
 	}
 }

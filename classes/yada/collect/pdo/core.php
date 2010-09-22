@@ -10,5 +10,16 @@
  
 abstract class Yada_Collect_PDO_Core extends Yada_Collect
 {
+	/**
+	 *
+	 * @var array
+	 */
+	protected static $_exported = array('as_array');
+
+	public function as_array($model = NULL, $args = NULL)
+	{
+//		$data = new PDOStatement();
+//		$data->
+	}
 
 }

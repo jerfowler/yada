@@ -152,11 +152,6 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 	 */
 	abstract protected function _load($limit = NULL, $offset = NULL);
 
-
-	abstract protected function _link($field, $related, $reverse = FALSE);
-
-
-
 	/**
 	 *
 	 */
@@ -337,8 +332,18 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 
 	public function link($model = NULL, $field = NULL, $reverse = FALSE)
 	{
-		$model = isset($model) ? $model : $this->_model;
+		var_dump('Link');
+		if ( ! $model instanceof Yada_Model)
+		{
+		    $field = $model;
+		    $model = $this->_model;
+		}
+
+		var_dump($field->name);
+
 		$this->field($model, $field);
+		$field = $this->_field;
+
 		if ( ! $field instanceof Yada_Field_Interface_Related)
 		{
 			throw new Kohana_Exception('Field :name in Model :model isn\'t a Related Field', array(
@@ -347,11 +352,9 @@ abstract class Yada_Mapper_Core implements Yada_Interface_Module
 		}
 
 		$related = $field->related();
-		$linked = $this->_linked;
-		if ( ! $linked->offsetExists($field))
+		if ( ! $this->_linked->offsetExists($field))
 		{
-			$linked->offsetSet($field, $related);
-			$this->_link($field, $related, $reverse);
+			$this->_linked[$field] = array($related, $reverse);
 			$related->mapper->link($related->model, $related, TRUE);
 		}
 		return $related->model;

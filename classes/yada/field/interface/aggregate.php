@@ -11,4 +11,5 @@
 interface Yada_Field_Interface_Aggregate extends Yada_Field_Interface_Expression
 {
 	public function expression();
+	public function group();
 }

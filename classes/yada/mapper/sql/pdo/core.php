@@ -8,6 +8,11 @@
  * @license http://www.opensource.org/licenses/bsd-license.php The BSD License
  */
 
+
+/**
+ *  FYI: Much of this code is borrowed from Kohana's Database Module.
+ */
+
 abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 {
 
@@ -23,6 +28,10 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 	 */
 	protected $_config;
 
+	/**
+	 *
+	 * @var string
+	 */
 	protected $_instance;
 
 	public function __construct(Yada_Meta $meta, Yada_Model $model, $values = NULL)
@@ -80,8 +89,8 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 
 		if ( ! empty($this->_config['charset']))
 		{
-			// Set the character set
-			$this->set_charset($this->_config['charset']);
+			// Execute a raw SET NAMES query
+			$this->_db->exec('SET NAMES '.$this->_db->quote($this->_config['charset']));
 		}
 	}
 
@@ -91,15 +100,6 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 		$this->_db = NULL;
 
 		return TRUE;
-	}
-
-	public function set_charset($charset)
-	{
-		// Make sure the database is connected
-		$this->_db or $this->_connect();
-
-		// Execute a raw SET NAMES query
-		$this->_db->exec('SET NAMES '.$this->_db->quote($charset));
 	}
 
 	protected function _prepare($sql) 
@@ -114,7 +114,11 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 		}
 		try
 		{
-			return $this->_db->prepare($sql);
+			$result = $this->_db->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
+			if ($result === FALSE)
+			{
+				$result = $this->_db->prepare($sql);
+			}
 		}
 		catch (Exception $e)
 		{
@@ -131,6 +135,7 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 		{
 			Profiler::stop($benchmark);
 		}
+		return $result;
 	}
 
 	protected function _bind_value($query, $param, $value)
@@ -138,13 +143,16 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 		$type = PDO::PARAM_STR;
 		if (is_int($value))
 		{
-		    $type = PDO::PARAM_INT;
+			$type = PDO::PARAM_INT;
 		}
 		elseif (is_bool($value))
 		{
-		    $type = PDO::PARAM_BOOL;
+			$type = PDO::PARAM_BOOL;
 		}
-
+		elseif (is_resource($value))
+		{
+			$type = PDO::PARAM_LOB;
+		}
 		$query->bindValue($param, $value, $type);
 	}
 
@@ -153,13 +161,16 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 		$type = PDO::PARAM_STR;
 		if (is_int($var))
 		{
-		    $type = PDO::PARAM_INT;
+			$type = PDO::PARAM_INT;
 		}
 		elseif (is_bool($var))
 		{
-		    $type = PDO::PARAM_BOOL;
+			$type = PDO::PARAM_BOOL;
 		}
-
+		elseif (is_resource($value))
+		{
+			$type = PDO::PARAM_LOB;
+		}
 		$query->bindParam($param, $var, $type);
 	}
 
@@ -174,7 +185,7 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 			$params = array();
 			foreach ($this->_params as $key => $value)
 			{
-			    $params[] = $key.' = '.$value;
+				$params[] = $key.' = '.$value;
 			}
 			// Benchmark this query for the current instance
 			$benchmark = Profiler::start('Yada PDO ('.$this->_instance.'), Execute:', implode(', ', $params));
@@ -200,6 +211,7 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 			Profiler::stop($benchmark);
 		}
 
+		return $result;
 //
 //		// Set the last query
 //		$this->last_query = $sql;
@@ -239,4 +251,58 @@ abstract class Yada_Mapper_SQL_PDO_Core extends Yada_Mapper_SQL
 //			return $result->rowCount();
 //		}
 	}
+
+	protected function _exec($sql)
+	{
+		// Make sure the database is connected
+		$this->_db or $this->_connect();
+
+		if ( ! empty($this->_config['profiling']))
+		{
+			// Benchmark this query for the current instance
+			$benchmark = Profiler::start('Yada PDO ('.$this->_instance.'), Exec:', $sql);
+		}
+
+		try
+		{
+			$result = $this->_db->exec($sql);
+		}
+		catch (Exception $e)
+		{
+			if (isset($benchmark))
+			{
+				// This benchmark is worthless
+				Profiler::delete($benchmark);
+			}
+
+			// Rethrow the exception
+			throw $e;
+		}
+		if (isset($benchmark))
+		{
+			Profiler::stop($benchmark);
+		}
+		return $result;
+	}
+
+	protected function _last()
+	{
+		return $this->_db->lastInsertId();
+	}
+
+	protected function  _get_sql($query)
+	{
+		return $query->queryString;
+	}
+
+	/**
+	 *
+	 * @param PDOStatement $query
+	 * @param Integer $num
+	 */
+	protected function _fetch_column($query, $num = 0)
+	{
+		return $query->fetchColumn($num);
+	}
 }
+
